@@ -10,10 +10,8 @@ import csv #import de bases de données
 import matplotlib.pyplot as plt #pour faire des graphes/courbes
 
 
-
 def histo(col,arange,bins,color,x,title):
     
-
     #print(col)
     plt.hist(col, range=arange, bins= bins, color= color, edgecolor='white')
     
@@ -22,8 +20,6 @@ def histo(col,arange,bins,color,x,title):
     plt.title(title)
    # plt.title('Nombre d\'étudiant en fonction des notes')
     plt.axvline(x=x, color= 'red', linestyle='--')
-
-
 
 
 with open('données.txt', 'r') as f:
@@ -37,9 +33,6 @@ for i in range(len(l)):
 print(np.array(lf))
 
 
-#histo(l)
-#histo1(l)
-#histo2(l)
 histo(np.array(l)[:,0],(5,56),12,'blue',25,'col0')
 plt.savefig('col0.pdf')
 plt.close('all')
