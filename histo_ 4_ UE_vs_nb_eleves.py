@@ -18,7 +18,7 @@ def histo(col,arange,bins,color,x,title):
     plt.xlabel("notes")
     plt.ylabel("n étudiants")
     plt.title(title)
-   # plt.title('Nombre d\'étudiant en fonction des notes')
+   # plt.title('Nombre d\'étudiant en fonction des notes
     plt.axvline(x=x, color= 'red', linestyle='--')
 
 
