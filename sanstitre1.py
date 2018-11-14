@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Oct 15 14:29:32 2018
+Created on Tue Nov 13 17:52:06 2018
 
 @author: etudiant
 """
+
 
 import numpy as np
 import csv
@@ -27,7 +28,7 @@ plt.ylabel("n étudiants")
 plt.title('Nombre d\'étudiant en fonction des notes')
 plt.axvline(x=25, color= 'red', linestyle='--')
 
-'''import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 col1=np.array(l)[:,1]
 print(col1)
 plt.hist(col1)
@@ -52,4 +53,4 @@ plt.hist(col1)
 plt.xlabel("notes")
 plt.ylabel("n étudiants")
 plt.title('Nombre d\'étudiant en fonction des notes')
-plt.axvline(x=100, color= 'red', linestyle='--')'''
+plt.axvline(x=100, color= 'red', linestyle='--')
