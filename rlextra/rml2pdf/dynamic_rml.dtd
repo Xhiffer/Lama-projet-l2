@@ -1,0 +1,130 @@
+<!--
+DTD for Report Markup Language
+These are heavily used in the documentatation.
+*ALWAYS* CHANGE THIS WHEN A NEW VERSION OF THE DYNAMIC RML DTD
+IS RELEASED
+-->
+<!--THESE DIFFER FROM STANDARD-->
+<!ENTITY % ACQUIREQM "acquire?,">
+<!--THESE Are additional-->
+<!--the expression tag can appear in quite a few places-->
+<!ENTITY % LOGIC_EXPR "| expr">
+<!ENTITY % LOGIC_BLOCK "| loop_b | switch_b | assign_b | if_b | script_b | doclet">
+<!ENTITY % LOGIC_INLINE "| loop_i | switch_i | assign_i | if_i %LOGIC_EXPR;">
+<!ENTITY % LOGIC_TABLE "| loop_t | switch_t | assign_t | if_t">
+<!ENTITY % LOGIC_GRAPHICS "| loop_g | switch_g | assign_g | if_g">
+<!--NOW USE STANDARD. The entity declarations above will override-->
+<!ENTITY % rml_dtd SYSTEM "rml.dtd">
+%rml_dtd;
+<!--Block level logic tags-->
+<!ELEMENT loop_b (%GENERICFLOWABLES;)*>
+<!ATTLIST loop_b
+	var CDATA #REQUIRED
+	in CDATA #REQUIRED
+>
+<!ELEMENT case_b (%GENERICFLOWABLES;)*>
+<!ATTLIST case_b
+	condition CDATA #REQUIRED
+>
+<!ELEMENT default_b (%GENERICFLOWABLES;)*>
+<!ELEMENT switch_b (case_b*, default_b?)>
+<!ATTLIST switch_b
+	expr CDATA #IMPLIED
+>
+<!ELEMENT script_b (#PCDATA)>
+<!ELEMENT if_b (%TOPLEVEL;)*>
+<!ATTLIST if_b
+	cond CDATA #REQUIRED
+>
+<!ELEMENT assign_b EMPTY>
+<!ATTLIST assign_b
+	name CDATA #REQUIRED
+	value CDATA #REQUIRED
+>
+<!-- inline logic tags.  We allow the expression tag plus the rest.
+-->
+<!ELEMENT loop_i %STRINGFORMS;>
+<!ATTLIST loop_i
+	var CDATA #REQUIRED
+	in CDATA #REQUIRED
+>
+<!ELEMENT expr_i (#PCDATA)>
+<!ELEMENT if_i %STRINGFORMS;>
+<!ATTLIST if_i
+	cond CDATA #REQUIRED
+>
+<!ELEMENT case_i %STRINGFORMS;>
+<!ATTLIST case_i
+	condition CDATA #REQUIRED
+>
+<!ELEMENT default_i %STRINGFORMS;>
+<!ELEMENT switch_i (case_i*, default_i?)>
+<!ATTLIST switch_i
+	expr CDATA #IMPLIED
+>
+<!ELEMENT script_i (#PCDATA)>
+<!-- table logic tags. -->
+<!ELEMENT loop_t %TABLEROWMODEL;>
+<!ATTLIST loop_t
+	var CDATA #REQUIRED
+	in CDATA #REQUIRED
+>
+<!ELEMENT if_t %TABLEROWMODEL;>
+<!ATTLIST if_t
+	cond CDATA #REQUIRED
+>
+<!ELEMENT case_t %TABLEROWMODEL;>
+<!ATTLIST case_t
+	condition CDATA #REQUIRED
+>
+<!ELEMENT default_t %TABLEROWMODEL;>
+<!ELEMENT switch_t (case_t*, default_t?)>
+<!ATTLIST switch_t
+	expr CDATA #IMPLIED
+>
+<!ELEMENT script_t (#PCDATA)>
+<!--Keep the pure, generic ones handy, even though the content model does not reference them
+The problem with these is that the only sane content model is ANY, and this means that
+editors and other like tools lose the ability to intelligently check the semantics of what goes
+in them.
+-->
+<!ELEMENT loop ANY>
+<!ATTLIST loop
+	var CDATA #REQUIRED
+	in CDATA #REQUIRED
+>
+<!ELEMENT case ANY>
+<!ATTLIST case
+	condition CDATA #REQUIRED
+>
+<!ELEMENT switch (case*)>
+<!ATTLIST switch
+	expr CDATA #IMPLIED
+>
+<!ELEMENT assign EMPTY>
+<!ATTLIST assign
+	name CDATA #REQUIRED
+	value CDATA #REQUIRED
+>
+<!ELEMENT script (#PCDATA)>
+<!ELEMENT expr (#PCDATA)>
+<!ATTLIST expr
+	escape CDATA #IMPLIED
+	encoding CDATA #IMPLIED
+>	<!-- encoding defaults to utf8 -->
+<!-- data acquisition tags -->
+<!ELEMENT acquire (xmlData?)>
+<!ELEMENT xmlData EMPTY>
+<!ATTLIST xmlData
+	name CDATA #REQUIRED
+	fileName CDATA #IMPLIED
+	url CDATA #IMPLIED
+>
+
+<!ELEMENT doclet %STRINGFORMS;>
+<!ATTLIST doclet
+	baseDir CDATA #IMPLIED
+	module CDATA #REQUIRED
+	class CDATA #REQUIRED
+	data CDATA #IMPLIED
+>

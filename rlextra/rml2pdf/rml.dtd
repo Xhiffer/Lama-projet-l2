@@ -1,0 +1,4078 @@
+<!-- $Id$ -->
+<!--
+DTD for Report Markup Language
+*ALWAYS* CHANGE THIS WHEN A NEW VERSION OF THE RML DTD
+IS RELEASED
+-->
+<!-- These are heavily used in the documentatation.         -->
+<!ENTITY % MajorVersionNumber "1">
+<!ENTITY % MinorVersionNumber "1">
+<!ENTITY % VersionNumber "%MajorVersionNumber;.%MinorVersionNumber;">
+<!-- this is an entity for use outside the DTD -->
+<!ENTITY RMLId "$URL$ $Revision$ $Date$">
+<!ENTITY RMLVersionNumber " %VersionNumber;">
+<!ENTITY RMLVersionString "RML Version">
+<!ENTITY RMLDTDFileName "rml.dtd">
+<!ENTITY % RMLDTDFileName "rml.dtd">
+<!-- These entities provide support for including dynamic RML.  In this DTD they evaluate to
+nothing.  In Dynamic RML they are replaced with listings of the logic tags, thereby allowing that
+DTD to inherit this one easily.-->
+<!ENTITY % ACQUIREQM "">
+<!ENTITY % LOGIC_EXPR "">
+<!ENTITY % LOGIC_GRAPHICS "">
+<!ENTITY % LOGIC_BLOCK "">
+<!ENTITY % LOGIC_INLINE "">
+<!ENTITY % LOGIC_TABLE "">
+
+<!ENTITY % LOGTAGS "(log | debug | info | warn | error | critical)*">
+<!ENTITY % STRINGFORMS "(#PCDATA | name | getName | pageNumber | evalString %LOGIC_INLINE;)*">
+
+
+<!ELEMENT document (%ACQUIREQM; docinit?, ((template, stylesheet, story) | (stylesheet, pageInfo?, (pageDrawing)+)))>
+
+<!-- userPass & ownerPass specify encryption
+	 permissions can be blank separated list of values from print copy annotate modify; default is print
+	 encryptionStrenth specifies 40 or 128 bit encryption default 128-->
+<!ATTLIST document
+    filename CDATA #REQUIRED
+    compression (0 | 1 | default) #IMPLIED
+    invariant (0 | 1 | default) #IMPLIED
+    debug (0 | 1) #IMPLIED
+    colorSpace (MIXED | RGB | CMYK | SEP | SEP_BLACK | SEP_CMYK) #IMPLIED
+	userPass CDATA #IMPLIED
+	ownerPass CDATA #IMPLIED
+	permissions CDATA #IMPLIED
+	encryptionStrength CDATA #IMPLIED 
+>
+<!-- pageInfo, used to specify canvas parameters for simple docs
+	 the boxes must be 4 lengths or none; no semantics are attached use
+	 at your own risk.
+	 -->
+
+<!ELEMENT pageInfo EMPTY>
+<!ATTLIST pageInfo
+    pageSize CDATA #IMPLIED
+    title CDATA #IMPLIED
+    author CDATA #IMPLIED
+    subject CDATA #IMPLIED
+    creator CDATA #IMPLIED
+    keywords CDATA #IMPLIED
+	displayDocTitle (yes | no | 0 | 1 | true | false | none) "none"
+	lang CDATA #IMPLIED
+	cropBox CDATA #IMPLIED
+	artBox CDATA #IMPLIED
+	trimBox CDATA #IMPLIED
+	bleedBox CDATA #IMPLIED
+>
+<!-- 
+DEPRECATED.  You should use namedString instead.
+-->
+<!ELEMENT name EMPTY>
+<!ATTLIST name
+    id CDATA #REQUIRED
+    value CDATA #REQUIRED
+    type CDATA "string"
+>
+
+
+<!-- namedString differs from name in that it defines an internal 
+variable when it is encountered and used (not when parsed).
+Do not use in <docinit> as it will have no effect. (Can we fix this?)
+
+Typical use: a page template may have dynamic chapter headings,
+images or colour schemes.   Define the value before the page
+break, then <nextPage/> or <nextFrame/> will use the new
+value when the template is drawn.
+
+<namedString> is commonly used in the story.  It has no visible
+effect and consumes no space. If new is true (default false) the
+value is assigned only if the namedString is currently undefined.
+If discard is true (default false) then the result is evaluated
+and assigned early and the result is discarded
+
+If indexName is set it is assumed to be the name of another namedString
+whose value is to be used as an index; this namedString will then become
+a dict of stringS rather than a simple string.
+
+See test_042_longdoc.rml.
+-->
+
+<!ELEMENT namedString %STRINGFORMS;>
+<!ATTLIST namedString
+    id CDATA #REQUIRED
+    type CDATA "string"
+    default CDATA #IMPLIED
+    new (yes | no | 0 | 1 | none) #IMPLIED
+    discard (yes | no | 0 | 1 | none) #IMPLIED
+	indexName CDATA #IMPLIED
+>
+
+
+
+<!-- 'alias' creates a new name for an existing object   -->
+<!-- eg can be used to have duplicate names for styles   -->
+<!-- THIS NEEDS SCOPING TO BE REALLY USEFUL              -->
+<!ELEMENT alias EMPTY>
+<!ATTLIST alias
+    id CDATA #REQUIRED
+    value CDATA #REQUIRED
+>
+<!-- This is a generic key-value parameter thingy used in
+several contexts. -->
+<!ELEMENT param (#PCDATA)>
+<!ATTLIST param
+    name CDATA #REQUIRED
+>
+<!-- this yanks information from 'name' which must be a dict if
+indexName (the name of another namedString) is used-->
+<!ELEMENT getName EMPTY>
+<!ATTLIST getName
+    id CDATA #REQUIRED
+    default CDATA #IMPLIED
+	indexName CDATA #IMPLIED
+>
+<!ELEMENT color EMPTY>
+<!ATTLIST color
+    id CDATA #REQUIRED
+    RGB CDATA #IMPLIED
+    CMYK CDATA #IMPLIED
+    alias CDATA #IMPLIED
+    spotName CDATA #IMPLIED
+    density CDATA #IMPLIED
+>
+<!ELEMENT length EMPTY>
+<!ATTLIST length
+    id CDATA #REQUIRED
+    value CDATA #REQUIRED
+>
+<!--
+    registerType1Face - read in type 1 font face information for global use
+-->
+<!ELEMENT registerType1Face EMPTY>
+<!ATTLIST registerType1Face
+    afmFile CDATA #REQUIRED
+    pfbFile CDATA #REQUIRED
+>
+<!--
+    registerFont - associate a font name to a face combined with an encoding
+-->
+<!ELEMENT registerFont EMPTY>
+<!ATTLIST registerFont
+    name CDATA #REQUIRED
+    faceName CDATA #REQUIRED
+    encName CDATA #IMPLIED
+>
+<!ELEMENT registerCidFont EMPTY>
+<!ATTLIST registerCidFont
+    faceName CDATA #REQUIRED
+    encName CDATA #IMPLIED
+>
+<!ELEMENT registerTTFont EMPTY>
+<!ATTLIST registerTTFont
+    faceName CDATA #REQUIRED
+    fileName CDATA #REQUIRED
+>
+<!ELEMENT registerFontFamily EMPTY>
+<!ATTLIST registerFontFamily
+    normal CDATA #REQUIRED
+    bold CDATA #IMPLIED
+    italic CDATA #IMPLIED
+    boldItalic CDATA #IMPLIED
+    >
+<!ELEMENT pageNumber EMPTY>
+<!ATTLIST pageNumber
+    countingFrom CDATA #IMPLIED
+>
+
+<!ELEMENT br EMPTY>
+
+
+<!ELEMENT template (pageTemplate*)>
+<!ATTLIST template
+    pageSize CDATA #IMPLIED
+    leftMargin CDATA #IMPLIED
+    rightMargin CDATA #IMPLIED
+    topMargin CDATA #IMPLIED
+    bottomMargin CDATA #IMPLIED
+    showBoundary CDATA #IMPLIED
+    allowSplitting CDATA #IMPLIED
+    firstPageTemplate CDATA #IMPLIED
+
+    title CDATA "(untitled)"
+    author CDATA "(unauthored)"
+    subject CDATA "(unspecified)"
+    creator CDATA "(unspecified)"
+    keywords CDATA #IMPLIED
+	displayDocTitle (yes | no | 0 | 1 | true | false | none) "none"
+	lang CDATA #IMPLIED
+
+    rotation CDATA #IMPLIED
+	cropBox CDATA #IMPLIED
+	artBox CDATA #IMPLIED
+	trimBox CDATA #IMPLIED
+	bleedBox CDATA #IMPLIED
+>
+<!ELEMENT pageTemplate ((pageGraphics, pageGraphics?)?, frame*)>
+<!ATTLIST pageTemplate
+    id CDATA #REQUIRED
+    pageSize CDATA #IMPLIED
+    rotation CDATA #IMPLIED
+    autoNextTemplate CDATA #IMPLIED
+	cropBox CDATA #IMPLIED
+	artBox CDATA #IMPLIED
+	trimBox CDATA #IMPLIED
+	bleedBox CDATA #IMPLIED
+>
+<!-- DRAWINGOPS is for use with pageGraphics -->
+<!--
+###########################################################################
+# Highly experimental stuff:
+# added below:
+#   - textBox
+#   - barCode
+###########################################################################
+-->
+<!ENTITY % DRAWINGOPS "(saveState | restoreState
+	| drawString | drawRightString | drawCentredString | drawCenteredString
+    | ellipse | alias | catchForms | outlineAdd | namedString | bookmarkPage | bookmark
+    | circle | rect | fill | stroke | overprint | setFont | setFontSize | image 
+    | pageGraphics | place | placePara | form | doForm | plugInGraphic
+    | scale | translate | rotate | skew | transform
+    | grid | path | lines | curves | lineMode 
+    | textBox | barCode | checkBox | letterBoxes | textAnnotation
+	| textField | checkboxField | radioField | choiceField | listboxField | drawingGraphic
+    | drawIf %LOGIC_GRAPHICS;)*">
+<!-- A form is a stored and named bunch of graphical operations
+     It will only be "evaluated" once, so any page numbers or names
+     in it will become fixed after the first occurrence (if it occurs
+     in another form or in a pageGraphic, for example)
+-->
+<!ELEMENT form %DRAWINGOPS;>
+<!ATTLIST form
+    name CDATA #REQUIRED
+>
+<!-- pageGraphics provide for a graphic backdrop for a WHOLE page-->
+<!ELEMENT pageGraphics %DRAWINGOPS;>
+
+<!ELEMENT path (#PCDATA | moveto | curvesto | closePath)*>
+<!ATTLIST path
+    x CDATA #REQUIRED
+    y CDATA #REQUIRED
+    fill CDATA #IMPLIED
+    stroke CDATA #IMPLIED
+    close CDATA #IMPLIED
+    clip CDATA #IMPLIED
+	autoclose (none | svg | pdf) #IMPLIED
+	fillrule (none | even-odd | non-zero) #IMPLIED
+>
+<!ELEMENT moveto (#PCDATA)>
+<!ELEMENT curvesto (#PCDATA)>
+<!ELEMENT closePath EMPTY>
+<!ELEMENT rotate EMPTY>
+<!ATTLIST rotate
+    degrees CDATA #REQUIRED
+>
+<!ELEMENT skew EMPTY>
+<!ATTLIST skew
+    alpha CDATA #REQUIRED
+    beta CDATA #REQUIRED
+>
+<!ELEMENT lineMode EMPTY>
+<!ATTLIST lineMode
+    join CDATA #IMPLIED
+    cap CDATA #IMPLIED
+    width CDATA #IMPLIED
+    miterLimit CDATA #IMPLIED
+    dash CDATA #IMPLIED
+>
+<!ELEMENT lines (#PCDATA)>
+<!ELEMENT transform (#PCDATA)>
+<!ELEMENT curves (#PCDATA)>
+<!ELEMENT scale EMPTY>
+<!ATTLIST scale
+    sx CDATA #IMPLIED
+    sy CDATA #IMPLIED
+>
+<!--    catchForms provides direct support for PageCatcher form storage files.
+    It is a drawing operation.  It requires pageCatcher module on the python
+    path.
+
+    Example usage:
+
+    <pageDrawing>
+     <catchForms storageFile="storage.data"/> or <catchForms pdfFile="aaa.pdf" pfx="PF" pages="all"/>
+     <doForm name="PF0"/>
+    </pageDrawing>
+
+    (if storage.data is a pageCatcher storage file containing form "PF0").
+    use pdfFile to restore direct from a pdf file
+    pfx is prefix for pdfFile forms
+    pages is space separated pdfFile pages we use or "all"
+-->
+<!ELEMENT catchForms EMPTY>
+<!ATTLIST catchForms
+    storageFile CDATA #IMPLIED
+    pdfFile CDATA #IMPLIED
+    pfx CDATA #IMPLIED
+    pages CDATA #IMPLIED
+>
+<!-- outlineAdd adds an outline entry.  It may occur in either graphics
+     or in a story.  The level specifies how deep in the outline the
+     entry appears. The default level is 0.
+
+     Note: in order to add a level 3 outline entry the previous outline
+     entry must be at least level 2 (2,3,4...).  That is to say, you can
+     "move back" any number of levels, but you can only "move forward" one level
+     at a time.
+
+     "closed" if set hides any children of this outline entry by default.
+     (boolean).
+
+EXAMPLE:
+
+<outlineAdd>First outline entry</outlineAdd>
+<outlineAdd level="1">sub entry</outlineAdd>
+<outlineAdd closed="true">Second outline entry 2</outlineAdd>
+<outlineAdd level="1">sub entry 2</outlineAdd>
+
+-->
+<!ELEMENT outlineAdd %STRINGFORMS;>
+<!ATTLIST outlineAdd
+    level CDATA #IMPLIED
+    closed CDATA #IMPLIED
+    name CDATA #IMPLIED
+    newBookmark (yes | no | 0 | 1 | none) #IMPLIED
+>
+<!ELEMENT bookmarkPage EMPTY>
+<!ATTLIST bookmarkPage
+    name CDATA #REQUIRED
+    fit (XYZ|Fit|FitH|FitV|FitR) #IMPLIED
+    top CDATA #IMPLIED
+    bottom CDATA #IMPLIED
+    left CDATA #IMPLIED
+    right CDATA #IMPLIED
+    zoom CDATA #IMPLIED
+>
+<!ELEMENT bookmark EMPTY>
+<!ATTLIST bookmark
+    name CDATA #REQUIRED
+    x CDATA #IMPLIED
+    y CDATA #IMPLIED
+>
+<!ELEMENT translate EMPTY>
+<!ATTLIST translate
+    dx CDATA #IMPLIED
+    dy CDATA #IMPLIED
+>
+<!ELEMENT grid EMPTY>
+<!ATTLIST grid
+    xs CDATA #IMPLIED
+    ys CDATA #IMPLIED
+>
+<!ELEMENT join EMPTY>
+<!ATTLIST join
+    type CDATA #REQUIRED
+>
+<!-- if image file is empty then inlineData must be present and vice-versa
+	 alt_file specifies an alternate image file if file specified and is missing
+	 if file is present and is not found then an exception is raised unless required=False
+-->
+<!ELEMENT image (inlineData?)>
+<!ATTLIST image
+    file CDATA #REQUIRED
+    x CDATA #REQUIRED
+    y CDATA #REQUIRED
+    width CDATA #IMPLIED
+    height CDATA #IMPLIED
+    inline CDATA #IMPLIED
+    transparency_mask CDATA "auto"
+    preserveAspectRatio (yes | no | 0 | 1) #IMPLIED
+    showBoundary (yes | no | 0 | 1) #IMPLIED
+    anchor (n|ne|e|se|s|sw|w|nw|c) #IMPLIED
+    pdfBoxType (MediaBox | CropBox| TrimBox | BleedBox | ArtBox) #IMPLIED
+    required (yes | no | 0 | 1 | true | false) "true"
+	alt_file CDATA #IMPLIED
+    type (pdf|bitmap|svg)	#IMPLIED
+	autoSize (yes | no | 0 | 1 | true | false) "true"
+	pdfPageNumber CDATA "1"
+	anchorAtXY (yes | no | 0 | 1 | true | false) "false"
+>
+<!ELEMENT inlineData (#PCDATA)>
+<!--inlineData filters is a space separated list of filters which are applied in order
+	 allowed filters are
+	 base64 | ascii85 | bzip2 | gzip
+	 -->
+<!ATTLIST inlineData
+	filters CDATA #REQUIRED
+	>
+<!ELEMENT setFont EMPTY>
+<!ATTLIST setFont
+    name CDATA #REQUIRED
+    size CDATA #REQUIRED
+    leading CDATA #IMPLIED
+>
+<!ELEMENT setFontSize EMPTY>
+<!ATTLIST setFontSize
+    size CDATA #IMPLIED
+    leading CDATA #IMPLIED
+>
+<!ELEMENT stroke EMPTY>
+<!ATTLIST stroke
+    color CDATA #REQUIRED
+    width CDATA #IMPLIED
+>
+<!ELEMENT fill EMPTY>
+<!ATTLIST fill
+    color CDATA #REQUIRED
+>
+
+<!ELEMENT overprint EMPTY>
+<!ATTLIST overprint
+    mode (overprint | knockout) #REQUIRED
+>
+
+
+<!ELEMENT rect EMPTY>
+<!ATTLIST rect
+    x CDATA #REQUIRED
+    y CDATA #REQUIRED
+    width CDATA #REQUIRED
+    height CDATA #REQUIRED
+    fill CDATA #IMPLIED
+    stroke CDATA #IMPLIED
+    round CDATA #IMPLIED
+    href CDATA #IMPLIED
+    destination CDATA #IMPLIED
+>
+<!ELEMENT circle EMPTY>
+<!ATTLIST circle
+    x CDATA #REQUIRED
+    y CDATA #REQUIRED
+    radius CDATA #REQUIRED
+    fill CDATA #IMPLIED
+    stroke CDATA #IMPLIED
+>
+<!ELEMENT ellipse EMPTY>
+<!ATTLIST ellipse
+    x CDATA #REQUIRED
+    y CDATA #REQUIRED
+    width CDATA #REQUIRED
+    height CDATA #REQUIRED
+    fill CDATA #IMPLIED
+    stroke CDATA #IMPLIED
+>
+
+<!ELEMENT textBox %STRINGFORMS;>
+<!ATTLIST textBox
+    style CDATA ""
+    x CDATA #REQUIRED
+    y CDATA #REQUIRED
+    boxWidth CDATA #REQUIRED
+    boxHeight CDATA #REQUIRED
+    labelFontName CDATA #IMPLIED
+    labelFontSize CDATA #IMPLIED
+    labelTextColor CDATA #IMPLIED
+    labelOffsetX CDATA #IMPLIED
+    labelOffsetY CDATA #IMPLIED
+    boxStrokeColor CDATA #IMPLIED
+    boxFillColor CDATA #IMPLIED
+    textColor CDATA #IMPLIED
+    lineWidth CDATA #IMPLIED
+    fontName CDATA #IMPLIED
+    fontSize CDATA #IMPLIED
+    align CDATA #IMPLIED
+    vAlign CDATA #IMPLIED
+    shrinkToFit CDATA #IMPLIED
+    label CDATA #IMPLIED
+    borderSpec CDATA #IMPLIED
+>
+<!ELEMENT checkBox EMPTY>
+<!ATTLIST checkBox
+    style CDATA ""
+    x CDATA #REQUIRED
+    y CDATA #REQUIRED
+    label CDATA #IMPLIED
+    labelFontName CDATA #IMPLIED
+    labelFontSize CDATA #IMPLIED
+    labelTextColor CDATA #IMPLIED
+    labelOffsetX CDATA #IMPLIED
+    labelOffsetY CDATA #IMPLIED
+    boxWidth CDATA #IMPLIED
+    boxHeight CDATA #IMPLIED
+    checkStrokeColor CDATA #IMPLIED
+    boxStrokeColor CDATA #IMPLIED
+    boxFillColor CDATA #IMPLIED
+    lineWidth CDATA #IMPLIED
+    line1 CDATA #IMPLIED
+    line2 CDATA #IMPLIED
+    line3 CDATA #IMPLIED
+    checked CDATA #IMPLIED
+    bold CDATA #IMPLIED
+    graphicOn CDATA #IMPLIED
+    graphicOff CDATA #IMPLIED
+>
+<!ELEMENT letterBoxes %STRINGFORMS;>
+<!ATTLIST letterBoxes
+    style CDATA ""
+    x CDATA #REQUIRED
+    y CDATA #REQUIRED
+    count CDATA #REQUIRED
+    label CDATA #IMPLIED
+    labelFontName CDATA #IMPLIED
+    labelFontSize CDATA #IMPLIED
+    labelTextColor CDATA #IMPLIED
+    labelOffsetX CDATA #IMPLIED
+    labelOffsetY CDATA #IMPLIED
+    boxWidth CDATA #IMPLIED
+    boxGap CDATA #IMPLIED
+    boxExtraGaps CDATA #IMPLIED
+    boxHeight CDATA #IMPLIED
+    combHeight CDATA #IMPLIED
+    boxStrokeColor CDATA #IMPLIED
+    boxFillColor CDATA #IMPLIED
+    textColor CDATA #IMPLIED
+    lineWidth CDATA #IMPLIED
+    fontName CDATA #IMPLIED
+    fontSize CDATA #IMPLIED
+    alignment CDATA #IMPLIED
+    strokeTop CDATA #IMPLIED
+    strokeBottom CDATA #IMPLIED
+    strokeLeft CDATA #IMPLIED
+    strokeRight CDATA #IMPLIED
+    
+>
+
+<!--
+The barCodeFlowable has these parameters
+
+value           -all- value to be displayed
+code            -all- name of the bar code type
+fontName        -all- fontName for humanReadable text
+tracking        USPS_4State tracking value if used
+routing         USPS_4State routing value if used
+barStrokeColor  -all-   color of the bar edges
+barFillColor    -all-   color of the bar fill
+textColor       -all-   color of any human readable text
+barStrokeWidth  -all-   width of bars
+gap             -all-   gap between bars
+ratio           I2of5
+bearers         Codabar Code11 Extended39 I2of5 MSI Standard39
+                whether bearers are to be displayed
+
+barHeight       Codabar Code11 Code128 Extended39 Extended93 FIM
+                I2of5 MSI POSTNET Standard39 Standard93
+                bar height
+barWidth        Codabar Code11 Code128 Extended39 Extended93 FIM
+                I2of5 MSI POSTNET Standard39 Standard93
+fontSize        -all- of human readable text
+spaceWidth      FIM POSTNET gap between bars for these widgets
+widthSize       USPS_4State scale in 0-1 for the width
+heightSize      USPS_4State scale in 0-1 for the height
+
+checksum        Codabar Code11 Extended39 I2of5 MSI Standard39
+quiet           Codabar Code11 Code128 Extended39 Extended93 FIM I2of5 MSI
+                Standard39 Standard93 quiet zones
+lquiet          Codabar Code11 Code128 Extended39 Extended93 FIM I2of5 MSI
+                Standard39 Standard93 left quiet zone
+rquiet          Codabar Code11 Code128 Extended39 Extended93 FIM I2of5 MSI
+                Standard39 Standard93
+humanReadable   -all-   1 for add human readable text
+stop            Codabar Code11 Extended39 Extended93 I2of5 MSI Standard39
+                Standard93 if stop bits are to be used
+-->
+
+<!ENTITY % BARCODES "(Codabar|Code11|Code128|Code128Auto
+|EAN13|EAN5|EAN8|ECC200DataMatrix|Extended39
+|Extended93|FIM|I2of5|ISBN|MSI|POSTNET|QR
+|Standard39|Standard93|UPCA|USPS_4State)"
+>
+<!ELEMENT barCodeFlowable EMPTY>
+<!ATTLIST barCodeFlowable
+    code %BARCODES; #REQUIRED
+    value CDATA #REQUIRED
+    fontName CDATA #IMPLIED
+    tracking CDATA #IMPLIED
+    routing CDATA #IMPLIED
+
+    barStrokeColor CDATA #IMPLIED
+    barFillColor CDATA #IMPLIED
+    textColor CDATA #IMPLIED
+
+    barStrokeWidth CDATA #IMPLIED
+    gap CDATA #IMPLIED
+    ratio CDATA #IMPLIED
+    bearers CDATA #IMPLIED
+    barHeight CDATA #IMPLIED
+    barWidth CDATA #IMPLIED
+    fontSize CDATA #IMPLIED
+    spaceWidth CDATA #IMPLIED
+    spaceHeight CDATA #IMPLIED
+    widthSize CDATA #IMPLIED
+    heightSize CDATA #IMPLIED
+
+    
+
+    checksum (-1 | 0 | 1 | 2) #IMPLIED
+    quiet (yes | no | 0 | 1) #IMPLIED
+    lquiet (yes | no | 0 | 1) #IMPLIED
+    rquiet (yes | no | 0 | 1) #IMPLIED
+    humanReadable (yes | no | 0 | 1) #IMPLIED
+    stop (yes | no | 0 | 1) #IMPLIED
+    >
+
+<!ELEMENT barCode %STRINGFORMS;>
+<!--
+The barCode drawing op has the same attributes as the barCodeFlowable and has x and y origin coords as well.
+The contents string is the value to encode. You may use the value attribute as well,
+but not together with content ie
+
+<barCode value="VALUE".../> or <barCode ...>VALUE</barCode>
+
+-->
+<!ATTLIST barCode
+    x CDATA #REQUIRED
+    y CDATA #REQUIRED
+
+    code %BARCODES; #REQUIRED
+    value CDATA #IMPLIED
+    fontName CDATA #IMPLIED
+    tracking CDATA #IMPLIED
+    routing CDATA #IMPLIED
+
+    barStrokeColor CDATA #IMPLIED
+    barFillColor CDATA #IMPLIED
+    textColor CDATA #IMPLIED
+
+    barStrokeWidth CDATA #IMPLIED
+    gap CDATA #IMPLIED
+    ratio CDATA #IMPLIED
+    bearers CDATA #IMPLIED
+    barHeight CDATA #IMPLIED
+    barWidth CDATA #IMPLIED
+    fontSize CDATA #IMPLIED
+    spaceWidth CDATA #IMPLIED
+    spaceHeight CDATA #IMPLIED
+    widthSize CDATA #IMPLIED
+    heightSize CDATA #IMPLIED
+
+    
+
+    checksum (-1 | 0 | 1 | 2) #IMPLIED
+    quiet (yes | no | 0 | 1) #IMPLIED
+    lquiet (yes | no | 0 | 1) #IMPLIED
+    rquiet (yes | no | 0 | 1) #IMPLIED
+    humanReadable (yes | no | 0 | 1) #IMPLIED
+    stop (yes | no | 0 | 1) #IMPLIED
+>
+
+
+
+<!-- a plugInGraphic identifies a function (callable) in a module which
+   takes a canvas and a data string as arguments and presumably draws
+   something on the canvas using information in the data string: eg
+
+    <plugInGraphic module="mymodule" function="myfunction>data string</plugInGraphic>
+
+   when executed results in effectively the execution sequence:
+
+    import mymodule
+    mymodule.myfunction(canvas, "data string")
+
+   using the current canvas object
+-->
+<!ELEMENT plugInGraphic %STRINGFORMS;>
+<!ATTLIST plugInGraphic
+    baseDir CDATA #IMPLIED
+    module CDATA #REQUIRED
+    function CDATA #REQUIRED
+>
+<!-- a plugInFlowable identifies a function (callable) in a module which
+   takes a canvas data string as an argument and returns a flowable
+   object (in the platypus sense):
+
+    <plugInFlowable module="mymodule" function="myfunction>data string</plugInGraphic>
+
+   when executed results in effectively the execution sequence:
+
+    import mymodule
+    flowable = mymodule.myfunction("data string")
+    story.append(flowable)
+
+   using the current canvas object
+-->
+<!ELEMENT plugInFlowable %STRINGFORMS;>
+<!ATTLIST plugInFlowable
+    baseDir CDATA #IMPLIED
+    module CDATA #REQUIRED
+    function CDATA #REQUIRED
+>
+<!ELEMENT drawing (caption?, (param | widget)*)>
+<!ENTITY % DRAWING_ATTRS "
+    baseDir CDATA #IMPLIED
+    module CDATA #REQUIRED
+    function CDATA #REQUIRED
+    showBoundary CDATA #IMPLIED
+    hAlign CDATA #IMPLIED"
+	>
+<!ATTLIST drawing
+	%DRAWING_ATTRS;
+>
+<!ELEMENT drawingGraphic (caption?, (param | widget)*)>
+<!ATTLIST drawingGraphic
+    x CDATA #REQUIRED
+    y CDATA #REQUIRED
+	anchor (
+		nw  | n  | ne  |
+		e	| c  | w   |
+		sw  | s  | se )	#IMPLIED
+	%DRAWING_ATTRS;
+	>
+<!ELEMENT figure (para?, drawing)>
+<!ATTLIST figure
+    showBoundary CDATA #IMPLIED
+    shrinkToFit CDATA #IMPLIED
+    growToFit CDATA #IMPLIED
+    scaleFactor CDATA #IMPLIED
+    showBoundary CDATA #IMPLIED
+    growToFit CDATA #IMPLIED
+    caption CDATA #IMPLIED
+    captionFont CDATA #IMPLIED
+    captionSize CDATA #IMPLIED
+    captionGap CDATA #IMPLIED
+    captionColor CDATA #IMPLIED
+	captionAlign (center|centre|left|right|CENTER|CENTRE|LEFT|RIGHT) #IMPLIED
+	captionPosition (top|bottom) #IMPLIED
+    spaceAfter CDATA #IMPLIED
+    spaceBefore CDATA #IMPLIED
+    align (center|centre|left|right|CENTER|CENTRE|LEFT|RIGHT) #IMPLIED
+>
+<!ELEMENT widget (#PCDATA)>
+<!ATTLIST widget
+    baseDir CDATA #IMPLIED
+    module CDATA #REQUIRED
+    function CDATA #REQUIRED
+    name CDATA #IMPLIED
+    initargs CDATA #IMPLIED
+>
+<!-- execute a previously defined form (add translate option?) -->
+<!ELEMENT doForm EMPTY>
+<!ATTLIST doForm
+    name CDATA #REQUIRED
+>
+<!ELEMENT saveState EMPTY>
+<!ELEMENT restoreState EMPTY>
+
+<!-- in the draw/place /Right/Centered/Centred String
+	mode is an integer
+		0 = Fill text
+		1 = Stroke text
+		2 = Fill then stroke
+		3 = Invisible
+		4 = Fill text and add to clipping path
+		5 = Stroke text and add to clipping path
+		6 = Fill then stroke and add to clipping path
+		7 = Add to clipping path
+
+	charSpace is a length to insert bwteen characters
+-->
+<!ELEMENT drawString %STRINGFORMS;>
+<!ATTLIST drawString
+    x CDATA #REQUIRED
+    y CDATA #REQUIRED
+	mode CDATA #IMPLIED
+	charSpace CDATA #IMPLIED
+	direction (ltr | LTR | rtl | RTL | none) #IMPLIED
+>
+<!ELEMENT drawRightString %STRINGFORMS;>
+<!ATTLIST drawRightString
+    x CDATA #REQUIRED
+    y CDATA #REQUIRED
+	mode CDATA #IMPLIED
+	charSpace CDATA #IMPLIED
+	direction (ltr | LTR | rtl | RTL | none) #IMPLIED
+>
+<!--for brits -->
+<!ELEMENT drawCentredString %STRINGFORMS;>
+<!ATTLIST drawCentredString
+    x CDATA #REQUIRED
+    y CDATA #REQUIRED
+	mode CDATA #IMPLIED
+	charSpace CDATA #IMPLIED
+	direction (ltr | LTR | rtl | RTL | none) #IMPLIED
+>
+<!--for americans -->
+<!ELEMENT drawCenteredString %STRINGFORMS;>
+<!ATTLIST drawCenteredString
+    x CDATA #REQUIRED
+    y CDATA #REQUIRED
+	mode CDATA #IMPLIED
+	charSpace CDATA #IMPLIED
+	direction (ltr | LTR | rtl | RTL | none) #IMPLIED
+>
+<!ELEMENT placeString %STRINGFORMS;>
+<!ATTLIST placeString
+    x CDATA #REQUIRED
+    y CDATA #REQUIRED
+	mode CDATA #IMPLIED
+	charSpace CDATA #IMPLIED
+    origin (page | frame | local) #IMPLIED
+	direction (ltr | LTR | rtl | RTL | none) #IMPLIED
+>
+<!ELEMENT placeRightString %STRINGFORMS;>
+<!ATTLIST placeRightString
+    x CDATA #REQUIRED
+    y CDATA #REQUIRED
+	mode CDATA #IMPLIED
+	charSpace CDATA #IMPLIED
+    origin (page | frame | local) #IMPLIED
+	direction (ltr | LTR | rtl | RTL | none) #IMPLIED
+>
+<!--for brits -->
+<!ELEMENT placeCentredString %STRINGFORMS;>
+<!ATTLIST placeCentredString
+    x CDATA #REQUIRED
+    y CDATA #REQUIRED
+	mode CDATA #IMPLIED
+	charSpace CDATA #IMPLIED
+    origin (page | frame | local) #IMPLIED
+	direction (ltr | LTR | rtl | RTL | none) #IMPLIED
+>
+<!--for americans -->
+<!ELEMENT placeCenteredString %STRINGFORMS;>
+<!ATTLIST placeCenteredString
+    x CDATA #REQUIRED
+    y CDATA #REQUIRED
+	mode CDATA #IMPLIED
+	charSpace CDATA #IMPLIED
+    origin (page | frame | local) #IMPLIED
+	direction (ltr | LTR | rtl | RTL | none) #IMPLIED
+>
+<!-- eval string <evalString><pageNumber/> - <getName id="prefixEnd"/></namedString>
+     evaluates to the result of evaluation. (security problem: should be disabled in insecure environment)
+  -->
+<!ELEMENT evalString %STRINGFORMS;>
+<!ATTLIST evalString
+    imports CDATA #IMPLIED
+    default CDATA #IMPLIED
+>
+<!--
+<textAnnotation><param name="Rect">0,0,1,1</param><param name="F">3</param><param name="escape">6</param>This is the contents
+of the text annotation
+</textAnnotation>
+-->
+<!ELEMENT textAnnotation (#PCDATA | param)*>
+<!ELEMENT frame EMPTY>
+<!ATTLIST frame
+    id CDATA #REQUIRED
+    x1 CDATA #REQUIRED
+    y1 CDATA #REQUIRED
+    width CDATA #REQUIRED
+    height CDATA #REQUIRED
+    overlapAttachedSpace (0 | 1) #IMPLIED
+	showBoundary CDATA #IMPLIED
+>
+
+<!--
+fieldFlags
+==========
+fieldFlags attributes are blank separated values from these keywords
+
+readOnly
+required
+noExport
+noToggleToOff
+radio
+pushButton
+radiosInUnison
+
+#text fields
+multiline
+password
+fileSelect
+doNotSpellCheck
+doNotScroll
+comb
+richText
+
+#choice fields
+combo			ie choice with dropdown list
+edit			ie if the combo can use entered text
+sort			not used by us
+multiSelect		ie select more than one item
+commitOnSelChange
+
+annotationFlags
+===============
+annotationFlags attributes are blank separated combos of these keywords
+	
+invisible
+hidden
+nozoom
+borotate
+noview
+readonly
+locked
+togglenoview
+lockedcontents
+print
+-->
+<!ELEMENT textField (#PCDATA | param)*>
+<!--by default we take the values from the attributes which will all have sensible defaults
+but we allow <param> tags to also be used
+
+it is an error to define the attributes twice
+This approach allows us to have expressions inside the param values which may be useful
+-->
+<!ENTITY % TEXTFIELD_ATTRS "
+    name CDATA #IMPLIED
+    value CDATA #IMPLIED
+    x CDATA #IMPLIED
+    y CDATA #IMPLIED
+    width CDATA #IMPLIED
+    height CDATA #IMPLIED
+    maxlen CDATA #IMPLIED
+	fieldFlags CDATA #IMPLIED
+	fillColor CDATA #IMPLIED
+	borderColor CDATA #IMPLIED
+	textColor CDATA #IMPLIED
+	borderWidth CDATA #IMPLIED
+	borderStyle (solid|underlined|bevelled|inset|dashed) 'solid'
+	tooltip CDATA #IMPLIED
+	annotationFlags CDATA #IMPLIED
+	fieldFlags CDATA #IMPLIED
+	forceBorder (yes | no | 0 | 1 | true | false) 'false'
+	relative  (yes | no | 0 | 1 | true | false) 'true'
+	multiline  (yes | no | 0 | 1 | true | false) 'true'
+	fontName CDATA #IMPLIED
+	fontSize CDATA #IMPLIED
+	dashLen CDATA #IMPLIED"
+>
+<!ATTLIST textField
+	%TEXTFIELD_ATTRS;
+>
+<!ELEMENT checkboxField (param)*>
+<!ATTLIST checkboxField
+	name CDATA #IMPLIED
+	buttonStyle (check|cross|circle|star|diamond) "check"
+	shape (square|circle) "square"
+	fillColor CDATA #IMPLIED
+	borderColor CDATA #IMPLIED
+	textColor CDATA #IMPLIED
+	borderWidth CDATA #IMPLIED
+	borderStyle (solid|underlined|bevelled|inset|dashed) "solid"
+	size CDATA #IMPLIED
+	x CDATA #IMPLIED
+	y CDATA #IMPLIED
+	tooltip CDATA #IMPLIED
+	annotationFlags CDATA #IMPLIED
+	fieldFlags CDATA #IMPLIED
+	forceBorder (yes | no | 0 | 1 | true | false) "false"
+	relative  (yes | no | 0 | 1 | true | false) "true"
+	checked (yes | no | 0 | 1 | true | false) "false"
+	dashLen CDATA #IMPLIED
+>
+<!ELEMENT radioField (param)*>
+<!ATTLIST radioField
+	name CDATA #IMPLIED
+	value CDATA #IMPLIED
+	buttonStyle (check|cross|circle|star|diamond) "check"
+	shape (square|circle) "square"
+	fillColor CDATA #IMPLIED
+	borderColor CDATA #IMPLIED
+	textColor CDATA #IMPLIED
+	borderWidth CDATA #IMPLIED
+	borderStyle (solid|underlined|bevelled|inset|dashed) "solid"
+	size CDATA #IMPLIED
+	x CDATA #IMPLIED
+	y CDATA #IMPLIED
+	tooltip CDATA #IMPLIED
+	annotationFlags CDATA #IMPLIED
+	fieldFlags CDATA #IMPLIED
+	forceBorder (yes | no | 0 | 1 | true | false) "false"
+	relative  (yes | no | 0 | 1 | true | false) "true"
+	selected (yes | no | 0 | 1 | true | false) "false"
+	dashLen CDATA #IMPLIED
+>
+<!ELEMENT choice EMPTY>
+<!ATTLIST choice
+    label CDATA #REQUIRED
+    value CDATA #IMPLIED
+>
+<!ELEMENT choiceField (param|choice)*>
+<!ATTLIST choiceField
+	%TEXTFIELD_ATTRS;
+>
+<!ELEMENT listboxField (param|choice)*>
+<!ATTLIST listboxField
+	%TEXTFIELD_ATTRS;
+>
+<!ELEMENT stylesheet ((initialize?, (paraStyle | boxStyle | blockTableStyle|listStyle)*)*)>
+<!ELEMENT initialize ((alias | name | color | length)*)>
+<!-- In the following elements, "block" refers to a square or rectangular region of
+a table - not necessarily a single cell. The table is called a "blockTable" to keep
+it consistent with all the tags that deal with what appears inside it -->
+<!ELEMENT blockTableStyle (blockSpan | blockFont | blockLeading | blockTextColor | blockAlignment | blockLeftPadding | blockRightPadding | blockBottomPadding | blockTopPadding | blockBackground | blockValign | lineStyle)*>
+<!ATTLIST blockTableStyle
+    id CDATA #REQUIRED
+    parent CDATA #IMPLIED
+    keepWithNext CDATA #IMPLIED
+    spaceBefore CDATA #IMPLIED
+    spaceAfter CDATA #IMPLIED
+>
+<!ELEMENT lineStyle EMPTY>
+<!ATTLIST lineStyle
+    kind CDATA #REQUIRED
+    thickness CDATA #IMPLIED
+    colorName CDATA #REQUIRED
+    cap (butt | round | square) #IMPLIED
+    start CDATA #IMPLIED
+    stop CDATA #IMPLIED
+    count CDATA #IMPLIED
+    space CDATA #IMPLIED
+    dash CDATA #IMPLIED
+>
+<!ELEMENT blockFont EMPTY>
+<!ATTLIST blockFont
+    name CDATA #REQUIRED
+    size CDATA #IMPLIED
+    leading CDATA #IMPLIED
+    start CDATA #IMPLIED
+    stop CDATA #IMPLIED
+>
+<!ELEMENT blockTextColor EMPTY>
+<!ATTLIST blockTextColor
+    colorName CDATA #REQUIRED
+    start CDATA #IMPLIED
+    stop CDATA #IMPLIED
+>
+<!ELEMENT blockLeading EMPTY>
+<!ATTLIST blockLeading
+    length CDATA #REQUIRED
+    start CDATA #IMPLIED
+    stop CDATA #IMPLIED
+>
+<!ELEMENT blockAlignment EMPTY>
+<!ATTLIST blockAlignment
+    value CDATA #REQUIRED
+    start CDATA #IMPLIED
+    stop CDATA #IMPLIED
+>
+<!ELEMENT blockValign EMPTY>
+<!ATTLIST blockValign
+    value CDATA #REQUIRED
+    start CDATA #IMPLIED
+    stop CDATA #IMPLIED
+>
+<!ELEMENT blockLeftPadding EMPTY>
+<!ATTLIST blockLeftPadding
+    length CDATA #REQUIRED
+    start CDATA #IMPLIED
+    stop CDATA #IMPLIED
+>
+<!ELEMENT blockRightPadding EMPTY>
+<!ATTLIST blockRightPadding
+    length CDATA #REQUIRED
+    start CDATA #IMPLIED
+    stop CDATA #IMPLIED
+>
+<!ELEMENT blockBottomPadding EMPTY>
+<!ATTLIST blockBottomPadding
+    length CDATA #REQUIRED
+    start CDATA #IMPLIED
+    stop CDATA #IMPLIED
+>
+<!ELEMENT blockTopPadding EMPTY>
+<!ATTLIST blockTopPadding
+    length CDATA #REQUIRED
+    start CDATA #IMPLIED
+    stop CDATA #IMPLIED
+>
+<!ELEMENT blockBackground EMPTY>
+<!ATTLIST blockBackground
+    colorName CDATA #IMPLIED
+    colorsByRow CDATA #IMPLIED
+    colorsByCol CDATA #IMPLIED
+    start CDATA #IMPLIED
+    stop CDATA #IMPLIED
+>
+<!ELEMENT blockSpan EMPTY>
+<!ATTLIST blockSpan
+    start CDATA #IMPLIED
+    stop CDATA #IMPLIED
+>
+<!--borderPadding can be a singleton or (t,r) or (t,r,b) or (t,r,b,l)-->
+<!ENTITY % PARA_ATTRS "
+	alignment CDATA #IMPLIED
+	allowOrphans (yes | no | 0 | 1 | true | false) #IMPLIED 
+	allowWidows (yes | no | 0 | 1 | true | false) #IMPLIED
+	autoLeading (min|max|off) #IMPLIED
+	backColor CDATA #IMPLIED
+	borderColor CDATA #IMPLIED
+	borderPadding CDATA #IMPLIED
+	borderRadius CDATA #IMPLIED
+	borderWidth CDATA #IMPLIED
+	bulletAnchor (start|middle|end|numeric) #IMPLIED
+	bulletColor CDATA #IMPLIED
+	bulletFontName CDATA #IMPLIED
+	bulletFontSize CDATA #IMPLIED
+	bulletIndent CDATA #IMPLIED
+	bulletOffsetY CDATA #IMPLIED
+	bulletText CDATA #IMPLIED
+	embeddedHyphenation (yes | no | 0 | 1 | true | false) #IMPLIED
+	endDots CDATA #IMPLIED
+	endDotsBackColor CDATA #IMPLIED
+	endDotsColor CDATA #IMPLIED
+	endDotsDy CDATA #IMPLIED
+	endDotsFontName CDATA #IMPLIED
+	endDotsFontSize CDATA #IMPLIED
+	firstLineIndent CDATA #IMPLIED
+	fontName CDATA #IMPLIED
+	fontSize CDATA #IMPLIED
+	frameBreakBefore CDATA #IMPLIED
+	hyphenationLang CDATA #IMPLIED
+	hyphenationMinWordLength CDATA #IMPLIED
+	justifyBreaks (yes | no | 0 | 1 | true | false) #IMPLIED
+	justifyLastLine CDATA #IMPLIED
+	keepWithNext CDATA #IMPLIED
+	leading CDATA #IMPLIED
+	leftIndent CDATA #IMPLIED
+	pageBreakBefore CDATA #IMPLIED
+	rightIndent CDATA #IMPLIED
+	spaceAfter CDATA #IMPLIED
+	spaceBefore CDATA #IMPLIED
+	spaceShrinkage CDATA #IMPLIED
+	splitLongWords (yes | no | 0 | 1 | true | false) #IMPLIED
+	strikeColor CDATA #IMPLIED
+	strikeOffset CDATA #IMPLIED
+	strikeWidth CDATA #IMPLIED
+	textColor CDATA #IMPLIED
+	textTransform (none|lowercase|uppercase|capitalize) #IMPLIED
+	underlineColor CDATA #IMPLIED
+	underlineOffset CDATA #IMPLIED
+	underlineWidth CDATA #IMPLIED
+	uriWasteReduce CDATA #IMPLIED
+	wordWrap (normal | CJK) #IMPLIED
+">
+
+<!ELEMENT paraStyle EMPTY>
+<!ATTLIST paraStyle
+    name CDATA #REQUIRED
+    alias CDATA #IMPLIED
+    parent CDATA #IMPLIED
+
+	%PARA_ATTRS;
+
+	linkUnderline (yes | no | 0 | 1 | true | false) #IMPLIED
+>
+<!ELEMENT boxStyle EMPTY>
+<!ATTLIST boxStyle
+    name CDATA #REQUIRED
+    alias CDATA #IMPLIED
+    parent CDATA #IMPLIED
+    fontName CDATA #IMPLIED
+    fontSize CDATA #IMPLIED
+    alignment CDATA #IMPLIED
+    textColor CDATA #IMPLIED
+    labelFontName CDATA #IMPLIED
+    labelFontSize CDATA #IMPLIED
+    labelAlignment CDATA #IMPLIED
+    labelTextColor CDATA #IMPLIED
+    boxFillColor CDATA #IMPLIED
+    boxStrokeColor CDATA #IMPLIED
+    cellWidth CDATA #IMPLIED
+    cellHeight CDATA #IMPLIED
+    borderSpec CDATA #IMPLIED
+>
+<!ENTITY % GENERICFLOWABLES "para | blockTable | title | h1 | h2 | h3 | h4 | h5 | h6 | spacer | ul | ol | dl
+        | illustration | graphicsMode | storyPlace | pre | xpre | codesnippet | plugInFlowable | drawing | outlineAdd | namedString
+		| bookmarkPage | bookmark | name | hr | indent | frameBackground
+        | fixedSize | keepInFrame | imageAndFlowables | imageFigure | figure | barCodeFlowable | keepTogether
+        | docWhile | docIf | docAssign | docExec | docAssert | docPara | showIndex | topPadder
+        | pto | placeString | placeRightString | placeCentredString | placeCenteredString 
+		| placePara | placeXPre | setTopFlowables | setPageTopFlowables | balancedColumns
+		%LOGIC_BLOCK;">
+<!--anything which can go in the story-->
+<!ENTITY % TOPLEVEL "( %GENERICFLOWABLES; | alias
+        | nextPage | nextPageIfNotEmpty | nextFrame | setNextFrame | setNextTemplate | switchTemplate | condPageBreak | includePdfPages 
+        | log | warn | debug | info | error | critical)*">
+<!--anything which can go in the story plus raw text - used in table cells-->
+<!ENTITY % TOPLEVEL2 "(#PCDATA %LOGIC_EXPR; | %GENERICFLOWABLES;)*">
+<!-- place places a flowable inside a pageGraphic or illustration -->
+
+<!ENTITY % BORDER_ATTRS "
+    borderStrokeWidth CDATA #IMPLIED
+    borderStrokeColor CDATA #IMPLIED
+    borderFillColor CDATA #IMPLIED
+    borderDash CDATA #IMPLIED"
+    >
+<!ELEMENT place (%GENERICFLOWABLES;)*>
+<!ATTLIST place
+    x CDATA #REQUIRED
+    y CDATA #REQUIRED
+    width CDATA #REQUIRED
+    height CDATA #REQUIRED
+    %BORDER_ATTRS;
+>
+<!ELEMENT storyPlace (%GENERICFLOWABLES;)*>
+<!ATTLIST storyPlace
+    x CDATA #REQUIRED
+    y CDATA #REQUIRED
+    width CDATA #REQUIRED
+    height CDATA #REQUIRED
+    origin (page | frame | local) #IMPLIED
+    %BORDER_ATTRS;
+>
+<!ELEMENT indent (%TOPLEVEL;)*>
+<!ATTLIST indent
+    left CDATA #IMPLIED
+    right CDATA #IMPLIED
+>
+
+<!ELEMENT frameBackground EMPTY>
+<!ATTLIST frameBackground
+    left CDATA #IMPLIED
+    right CDATA #IMPLIED
+    color CDATA #IMPLIED
+	start (yes | no | 0 | 1 | true | false | frame | frame-permanent) #IMPLIED
+>
+
+<!ELEMENT fixedSize (%TOPLEVEL;)*>
+<!ATTLIST fixedSize
+    width CDATA #IMPLIED
+    height CDATA #IMPLIED
+>
+<!ELEMENT keepTogether (%GENERICFLOWABLES;)*>
+<!ATTLIST keepTogether
+    maxHeight CDATA #IMPLIED
+>
+<!ELEMENT setTopFlowables (%GENERICFLOWABLES;)*>
+<!ATTLIST setTopFlowables
+	show (yes | no | 0 | 1) #IMPLIED
+	>
+<!ELEMENT setPageTopFlowables (%GENERICFLOWABLES;)*>
+<!ATTLIST setPageTopFlowables
+	show (yes | no | 0 | 1) #IMPLIED
+	>
+<!ELEMENT keepInFrame (%TOPLEVEL;)*>
+<!ATTLIST keepInFrame
+    frame CDATA #IMPLIED
+    maxWidth CDATA #IMPLIED
+    maxHeight CDATA #IMPLIED
+    mergeSpace CDATA #IMPLIED
+    onOverflow (error | overflow | shrink | truncate) #IMPLIED
+    id CDATA #IMPLIED
+	fakeWidth (yes | no | 0 | 1) #IMPLIED
+>
+<!ELEMENT imageAndFlowables (inlineData?,(%TOPLEVEL;))*>
+<!ATTLIST imageAndFlowables
+    imageName CDATA #REQUIRED
+    imageWidth CDATA #IMPLIED
+    imageHeight CDATA #IMPLIED
+    imageMask CDATA "auto"
+    imageLeftPadding CDATA #IMPLIED
+    imageRightPadding CDATA #IMPLIED
+    imageTopPadding CDATA #IMPLIED
+    imageBottomPadding CDATA #IMPLIED
+    imageSide (left|right) #IMPLIED
+    imageHref CDATA #IMPLIED
+    imageType (pdf|bitmap|svg)	#IMPLIED
+    preserveAspectRatio (yes | no | 0 | 1) #IMPLIED
+    pdfBoxType (MediaBox | CropBox| TrimBox | BleedBox | ArtBox) #IMPLIED
+    required (yes | no | 0 | 1 | true | false) "true"
+	alt_file CDATA #IMPLIED
+	pdfPageNumber CDATA "1"
+    autoSize (yes | no | 0 | 1 | true | false) "true"
+>
+<!ELEMENT imageFigure (para?,inlineData?)>
+<!ATTLIST imageFigure
+    imageName CDATA #REQUIRED
+    imageWidth CDATA #IMPLIED
+    imageHeight CDATA #IMPLIED
+    imageMask CDATA "auto"
+    imageType (pdf|bitmap)	#IMPLIED
+    preserveAspectRatio (yes | no | 0 | 1) #IMPLIED
+    pdfBoxType (MediaBox | CropBox | TrimBox | BleedBox | ArtBox) #IMPLIED
+    pdfPageNumber CDATA "1"
+    showBoundary CDATA #IMPLIED
+    shrinkToFit CDATA #IMPLIED
+    growToFit CDATA #IMPLIED
+    caption CDATA #IMPLIED
+    captionFont CDATA #IMPLIED
+    captionSize CDATA #IMPLIED
+    captionGap CDATA #IMPLIED
+    captionColor CDATA #IMPLIED
+	captionAlign (center|centre|left|right|CENTER|CENTRE|LEFT|RIGHT) #IMPLIED
+	captionPosition (top|bottom) #IMPLIED
+    spaceAfter CDATA #IMPLIED
+    spaceBefore CDATA #IMPLIED
+    align (center|centre|left|right|CENTER|CENTRE|LEFT|RIGHT) #IMPLIED
+    >
+<!ELEMENT pto_trailer (%TOPLEVEL;)*>
+<!ELEMENT pto_header (%TOPLEVEL;)*>
+<!ELEMENT pto (pto_trailer?, pto_header?, (%TOPLEVEL;)*)>
+<!ELEMENT nextPage EMPTY>
+<!ATTLIST nextPage
+    slow (yes | no | 0 | 1) #IMPLIED
+    suppressFirst (yes | no | 0 | 1) #IMPLIED
+	name CDATA #IMPLIED
+>
+<!ELEMENT nextPageIfNotEmpty EMPTY>
+<!ATTLIST nextPageIfNotEmpty
+    suppressFirst (yes | no | 0 | 1) #IMPLIED
+	name CDATA #IMPLIED
+>
+<!ELEMENT nextFrame EMPTY>
+<!ATTLIST nextFrame name CDATA #IMPLIED>
+<!ELEMENT setNextFrame EMPTY>
+<!ATTLIST setNextFrame name CDATA #REQUIRED>
+
+<!ELEMENT setNextTemplate EMPTY>
+<!ATTLIST setNextTemplate
+    name CDATA #REQUIRED
+>
+<!ELEMENT switchTemplate EMPTY>
+<!ATTLIST switchTemplate
+	name CDATA #REQUIRED
+>
+<!-- conditional page break -->
+<!ELEMENT condPageBreak EMPTY>
+<!ATTLIST condPageBreak
+    height CDATA #REQUIRED
+    suppressFirst (yes | no | 0 | 1) #IMPLIED
+>
+<!-- An illustration differs from pageGraphics in that is is 
+contained by a 'box' of space in the same way that an illustration 
+in a book is. It can be anywhere on a page - unlike pageGraphics 
+which must start at the origin -->
+<!ELEMENT illustration %DRAWINGOPS;>
+<!ATTLIST illustration
+    height CDATA #REQUIRED
+    width CDATA #REQUIRED
+    align CDATA #IMPLIED
+    %BORDER_ATTRS;
+>
+<!-- storyGraphics draws on the page, default origin is 'page' -->
+<!ELEMENT graphicsMode %DRAWINGOPS;>
+<!ATTLIST graphicsMode
+    origin (page | frame | local) #IMPLIED
+    %BORDER_ATTRS;
+>
+<!ELEMENT story %TOPLEVEL;>
+<!ATTLIST story
+    firstPageTemplate CDATA #IMPLIED
+>
+
+<!ELEMENT spacer EMPTY>
+<!ATTLIST spacer
+    length CDATA #REQUIRED
+    width CDATA #IMPLIED
+    isGlue	(yes | no | 0 | 1 | true | false) #IMPLIED
+>
+<!--
+	 split story into balance multiple columns
+	 ncols is the number of columns (default 2)
+	 needed is the minimum height to start in this frame (default 72pts)
+	 spaceBefore, spaceAfter needed space before and after (default 0)
+	 showBoundary whether to show the inner boundares
+	 leftPadding padding for left (default current frame leftPadding)
+	 rightPadding padding for right (default current frame rightPadding)
+	 innerPadding max(leftPadding,rightPadding)
+	 topPadding padding for top (default current frame topPadding)
+	 bottomPadding padding for bottom (default current frame bottomPadding)
+-->
+<!ELEMENT balancedColumns (%GENERICFLOWABLES;)*>
+<!ATTLIST balancedColumns
+    ncols CDATA #IMPLIED
+	needed CDATA #IMPLIED
+	spaceBefore CDATA #IMPLIED
+	spaceAfter CDATA #IMPLIED
+	showBoundary CDATA #IMPLIED
+	leftPadding CDATA #IMPLIED
+	innerPadding CDATA #IMPLIED
+	rightPadding CDATA #IMPLIED
+	topPadding CDATA #IMPLIED
+	bottomPadding CDATA #IMPLIED
+	endSlack CDATA #IMPLIED
+>
+<!ENTITY % PARASTUFF "(#PCDATA | b | a | u | greek | font | span | sup | super | sub | br | strike
+            | pageNumber | evalString | seq | seqDefault | seqReset | seqFormat | seqChain | img | index
+            | name | getName | i | bullet | unichar | link | setLink | onDraw | nobr %LOGIC_INLINE;
+            )*">
+<!--
+    orientation one of auto 0 90 180 270 portrait landscape should just work
+                default is do nothing
+	autoCrop true/false for using cropbox
+			 name of a box to use a specific box for cropping
+			 [x0,y0,  x1,y1] for a specified crop area
+			 default don't crop
+	pageSize default None ie leave page size alone
+				'set' adjust page size to incoming box
+				'fit' scale incoming box to fit page size
+				'orthfit' orthogonally scale incoming box to fit
+				'center' or 'centre' center the incoming box in
+				the existing page size
+				or [x0,y0, x1,y1]
+    pdfBoxType MediaBox | CropBox| TrimBox | BleedBox | ArtBox
+				or [x0,y0, x1,y1]
+				default None is don't care about the box at all
+-->
+<!ELEMENT includePdfPages EMPTY>
+<!ATTLIST includePdfPages
+    filename CDATA #REQUIRED
+    pages CDATA #IMPLIED
+    template CDATA #IMPLIED
+    outlineText CDATA #IMPLIED
+    outlineLevel CDATA #IMPLIED
+    outlineClosed CDATA #IMPLIED
+    leadingFrame (yes | no | 0 | 1 | notAtTop) #IMPLIED
+    isdata (yes|no|0|1) #IMPLIED
+    orientation CDATA #IMPLIED
+    sx CDATA #IMPLIED
+    sy CDATA #IMPLIED
+    dx CDATA #IMPLIED
+    dy CDATA #IMPLIED
+    degrees CDATA #IMPLIED
+    pdfBoxType CDATA #IMPLIED
+	autoCrop CDATA #IMPLIED
+	pageSize CDATA #IMPLIED
+>
+<!ELEMENT pre %STRINGFORMS;>
+<!ATTLIST pre
+    style CDATA "pre.defaultStyle"
+    maxLineLength CDATA #IMPLIED
+    splitChars CDATA #IMPLIED
+    newLineChars CDATA #IMPLIED
+>
+<!ELEMENT xpre %PARASTUFF;>
+<!ATTLIST xpre
+    style CDATA "pre.defaultStyle"
+    %PARA_ATTRS;
+>
+
+<!--Code snippets
+If pygments is installed, you can pass in Pygments lexer names
+to get colorised code snippets.
+
+-->
+
+<!ELEMENT codesnippet %STRINGFORMS;>
+<!ATTLIST codesnippet
+    style CDATA #IMPLIED
+    language CDATA #IMPLIED
+    maxLineLength CDATA #IMPLIED
+    splitChars CDATA #IMPLIED
+    newLineChars CDATA #IMPLIED
+>
+<!-- html style list constructs -->
+<!ELEMENT dl ((dt | dd)*)>
+<!-- for now term cannot contain subtags -->
+<!ELEMENT dt ((%GENERICFLOWABLES;)*)>
+<!ELEMENT dd ((%GENERICFLOWABLES;)*)>
+<!ATTLIST dl
+	ddLeftIndent CDATA #IMPLIED
+	ddRightIndent CDATA #IMPLIED
+    >
+<!-- the start attribute for lists can be a bullet name -->
+<!ENTITY % LIST_MAIN_ATTRS "
+	style			CDATA	#IMPLIED
+	leftIndent		CDATA	#IMPLIED
+	rightIndent		CDATA	#IMPLIED
+	spaceBefore		CDATA	#IMPLIED
+	spaceAfter		CDATA	#IMPLIED
+	bulletAlign		CDATA	#IMPLIED
+    bulletType 		CDATA	#IMPLIED
+    bulletColor 	CDATA	#IMPLIED
+    bulletFontName 	CDATA	#IMPLIED
+    bulletFontSize 	CDATA	#IMPLIED
+    bulletOffsetY 	CDATA	#IMPLIED
+	bulletDedent	CDATA	#IMPLIED
+	bulletDir		CDATA	#IMPLIED
+	bulletFormat	CDATA	#IMPLIED"
+    >
+<!ELEMENT listStyle EMPTY>
+<!ATTLIST listStyle
+    name CDATA #REQUIRED
+    alias CDATA #IMPLIED
+    parent CDATA #IMPLIED
+	start CDATA #IMPLIED
+	%LIST_MAIN_ATTRS;
+	>
+
+<!ELEMENT ul (li*)>
+<!ATTLIST ul
+	start	CDATA	#IMPLIED
+	%LIST_MAIN_ATTRS;
+    >
+<!ELEMENT ol (li*)>
+<!ATTLIST ol
+	start	CDATA	#IMPLIED
+	%LIST_MAIN_ATTRS;
+    >
+<!ELEMENT li ((%GENERICFLOWABLES;)+)>
+<!ATTLIST li
+	value CDATA #IMPLIED
+	%LIST_MAIN_ATTRS;
+    >
+<!ELEMENT para %PARASTUFF;>
+<!ATTLIST para
+    style CDATA "para.defaultStyle"
+    %PARA_ATTRS;
+    >
+<!ENTITY % PLACEPARA_ATTRS "
+    %PARA_ATTRS;
+    x CDATA #REQUIRED
+    y CDATA #REQUIRED
+	anchor (
+		nw  | n  | ne  |
+		nwl | nl | nel |
+		nwb | nb | neb |
+
+		e	| c  | w   |
+
+		swt | st | set |
+		swl | sl | sel |
+		sw  | s  | se )	#IMPLIED
+    origin (page | frame | local) #IMPLIED"
+	>
+<!ELEMENT placePara %PARASTUFF;>
+<!ATTLIST placePara
+    style CDATA "para.defaultStyle"
+    width CDATA #REQUIRED
+    %PLACEPARA_ATTRS;
+    >
+<!ELEMENT placeXPre %PARASTUFF;>
+<!ATTLIST placeXPre
+    style CDATA "pre.defaultStyle"
+    width CDATA #IMPLIED
+    %PLACEPARA_ATTRS;
+>
+<!ELEMENT bullet %PARASTUFF;>
+<!ATTLIST bullet
+    bulletColor CDATA #IMPLIED
+    bulletFontName CDATA #IMPLIED
+    bulletFontSize CDATA #IMPLIED
+    bulletIndent CDATA #IMPLIED
+    bulletOffsetY CDATA #IMPLIED
+    bulletAnchor (start|middle|end|numeric) #IMPLIED
+    >
+<!ELEMENT b %PARASTUFF;>
+<!-- u - underline - should add colors etc. -->
+<!ENTITY % U_ATTRS "
+    color CDATA #IMPLIED
+    offset CDATA #IMPLIED
+    width CDATA #IMPLIED
+    kind CDATA #IMPLIED
+    gap CDATA #IMPLIED"
+>
+<!ATTLIST u
+	%U_ATTRS;
+>
+<!ELEMENT u %PARASTUFF;>
+<!-- a href html style linking -->
+<!ELEMENT a %PARASTUFF;>
+<!ENTITY % LINK_ATTRS "
+    color CDATA #IMPLIED
+    fg CDATA #IMPLIED
+    textColor CDATA #IMPLIED
+
+    fontSize CDATA #IMPLIED
+    fontName  CDATA #IMPLIED
+
+    name CDATA #IMPLIED
+
+    backColor CDATA #IMPLIED
+    bgcolor CDATA #IMPLIED
+
+    href CDATA #IMPLIED
+    destination CDATA #IMPLIED
+    target CDATA #IMPLIED
+
+    underline (yes | no | 0 | 1 | none) #IMPLIED
+	underlineWidth CDATA #IMPLIED
+	underlineColor CDATA #IMPLIED
+	underlineOffset CDATA #IMPLIED
+	uwidth CDATA #IMPLIED
+	ucolor CDATA #IMPLIED
+	uoffset CDATA #IMPLIED
+	ukind CDATA #IMPLIED
+	ugap CDATA #IMPLIED"
+	>
+<!ATTLIST a
+    %LINK_ATTRS;
+    >
+<!-- link - internal pdf link -->
+<!ELEMENT link %PARASTUFF;>
+<!ATTLIST link
+    %LINK_ATTRS;
+    >
+<!-- setLink - define the link (Really only set at first point) -->
+<!ELEMENT setLink %PARASTUFF;>
+<!ATTLIST setLink
+    destination CDATA #REQUIRED
+    color CDATA #IMPLIED
+    >
+<!ELEMENT i %PARASTUFF;>
+<!ELEMENT font %PARASTUFF;>
+<!ATTLIST font
+    face CDATA #IMPLIED
+    color CDATA #IMPLIED
+    size CDATA #IMPLIED
+    backcolor CDATA #IMPLIED
+    >
+<!ELEMENT span %PARASTUFF;>
+<!ATTLIST span
+    style CDATA #IMPLIED
+    face CDATA #IMPLIED
+    color CDATA #IMPLIED
+    size CDATA #IMPLIED
+    backcolor CDATA #IMPLIED
+    >
+<!ELEMENT img EMPTY>
+<!ATTLIST img
+    src CDATA #REQUIRED
+    width CDATA #IMPLIED
+    height CDATA #IMPLIED
+    valign CDATA #IMPLIED
+    >
+<!ELEMENT greek %PARASTUFF;>
+<!ELEMENT super %PARASTUFF;>
+<!ATTLIST super
+    rise CDATA #IMPLIED
+    size CDATA #IMPLIED
+    >
+<!ELEMENT sup %PARASTUFF;>
+<!ATTLIST sup
+    rise CDATA #IMPLIED
+    size CDATA #IMPLIED
+    >
+<!ELEMENT sub %PARASTUFF;>
+<!ATTLIST sub
+    rise CDATA #IMPLIED
+    size CDATA #IMPLIED
+    >
+<!ELEMENT strike %PARASTUFF;>
+<!ATTLIST strike
+	%U_ATTRS;
+>
+
+<!ELEMENT seq EMPTY>
+<!ATTLIST seq
+    id CDATA #IMPLIED
+    template CDATA #IMPLIED
+    inc CDATA #IMPLIED
+    >
+<!-- seqdefault and seqreset are used in paragraph numbering -->
+<!-- or any sequence of consecutive numbers                  -->
+<!ELEMENT seqDefault EMPTY>
+<!ATTLIST seqDefault
+    id CDATA #REQUIRED
+>
+<!ELEMENT seqReset EMPTY>
+<!ATTLIST seqReset
+    id CDATA #IMPLIED
+>
+<!ELEMENT seqChain EMPTY>
+<!ATTLIST seqChain
+    order NMTOKENS #IMPLIED
+>
+<!ELEMENT seqFormat EMPTY>
+<!ATTLIST seqFormat
+    id CDATA #IMPLIED
+    value (1 | i | I | a | A) #IMPLIED
+>
+<!ELEMENT unichar EMPTY>
+<!ATTLIST unichar
+    name CDATA #IMPLIED
+    code CDATA #IMPLIED
+>
+<!ELEMENT onDraw EMPTY>
+<!ATTLIST onDraw
+    name CDATA #IMPLIED
+    label CDATA #IMPLIED
+>
+<!ELEMENT nobr %PARASTUFF;>
+
+<!ELEMENT title %PARASTUFF;>
+<!ATTLIST title
+    style CDATA "h1.defaultStyle"
+    %PARA_ATTRS;
+    >
+<!ELEMENT h1 %PARASTUFF;>
+<!ATTLIST h1
+    style CDATA "h1.defaultStyle"
+    %PARA_ATTRS;
+    >
+<!ELEMENT h2 %PARASTUFF;>
+<!ATTLIST h2
+    style CDATA "h2.defaultStyle"
+    %PARA_ATTRS;
+    >
+<!ELEMENT h3 %PARASTUFF;>
+<!ATTLIST h3
+    style CDATA "h3.defaultStyle"
+    %PARA_ATTRS;
+    >
+<!ELEMENT h4 %PARASTUFF;>
+<!ATTLIST h4
+    style CDATA "h4.defaultStyle"
+    %PARA_ATTRS;
+    >
+<!ELEMENT h5 %PARASTUFF;>
+<!ATTLIST h5
+    style CDATA "h5.defaultStyle"
+    %PARA_ATTRS;
+    >
+<!ELEMENT h6 %PARASTUFF;>
+<!ATTLIST h6
+    style CDATA "h6.defaultStyle"
+    %PARA_ATTRS;
+    >
+<!ELEMENT hr EMPTY>
+<!ATTLIST hr
+    lineCap (butt | round | square) #IMPLIED
+    width CDATA #IMPLIED
+    thickness CDATA #IMPLIED
+    align CDATA #IMPLIED
+    color CDATA #IMPLIED
+    spaceBefore CDATA #IMPLIED
+    spaceAfter CDATA #IMPLIED
+    dash CDATA #IMPLIED
+>
+<!ELEMENT docElse EMPTY>
+<!ELEMENT docIf (((%TOPLEVEL;)*),(docElse,(%TOPLEVEL;)*)?)>
+<!ATTLIST docIf
+    cond CDATA #REQUIRED
+>
+<!ELEMENT docWhile (%TOPLEVEL;)*>
+<!ATTLIST docWhile
+    cond CDATA #REQUIRED
+>
+<!ENTITY % DOCLT "life (page|frame|build|forever) #IMPLIED">
+<!ELEMENT docAssign EMPTY>
+<!ATTLIST docAssign
+    var CDATA #REQUIRED
+    expr CDATA #REQUIRED
+    %DOCLT;
+>
+<!ELEMENT docExec EMPTY>
+<!ATTLIST docExec
+    stmt CDATA #REQUIRED
+    %DOCLT;
+>
+<!ELEMENT docAssert EMPTY>
+<!ATTLIST docAssert
+    cond CDATA #REQUIRED
+    format CDATA #IMPLIED
+>
+<!ELEMENT docPara EMPTY>
+<!ATTLIST docPara
+    expr CDATA #REQUIRED
+    format CDATA #IMPLIED
+    style CDATA #IMPLIED
+    escape (yes | no | 0 | 1) #IMPLIED
+>
+<!-- AND SIMILARLY FOR H2, ETC (LATER) -->
+<!ELEMENT bulkData (#PCDATA)>
+<!ATTLIST bulkData
+    stripBlock (yes | no) #IMPLIED
+    stripLines (yes | no) #IMPLIED
+    stripFields (yes | no) #IMPLIED
+    fieldDelim CDATA #IMPLIED
+    recordDelim CDATA #IMPLIED
+>
+<!ELEMENT excelData EMPTY>
+<!ATTLIST excelData
+       fileName CDATA #REQUIRED
+       sheetName CDATA #REQUIRED
+       range CDATA #IMPLIED
+       rangeName CDATA #IMPLIED
+>
+<!ENTITY % TABLEROWMODEL "(tr %LOGIC_TABLE;)*">
+<!ELEMENT blockTable (blockTableStyle?, (bulkData | excelData | (%TABLEROWMODEL;)*))>
+<!ATTLIST blockTable
+    style CDATA #IMPLIED
+    colWidths CDATA #IMPLIED
+    rowHeights CDATA #IMPLIED
+    splitByRow CDATA #IMPLIED
+    repeatRows CDATA #IMPLIED
+    repeatCols CDATA #IMPLIED
+    align CDATA #IMPLIED
+    vAlign CDATA #IMPLIED
+	htmlSpans CDATA #IMPLIED
+	ident CDATA #IMPLIED
+    spaceBefore CDATA #IMPLIED
+    spaceAfter CDATA #IMPLIED
+	rowSplitRange CDATA #IMPLIED
+	longTableOptimize (yes | no | 0 | 1 | none) #IMPLIED
+	emptyTableAction (error|indicate|ignore) #IMPLIED
+	minRowHeights CDATA #IMPLIED
+>
+<!-- *NB* repeatRows can be a list  eg (1,) to only repeat the second row of
+	 the table (rows are zero based) or an integer eg 2 to indicate the first
+	 two rows should be repeated. -->
+<!ELEMENT tr (td+)>
+<!ATTLIST tr
+    noSplitRowCount CDATA #IMPLIED
+    >
+<!ELEMENT td %TOPLEVEL2;>
+<!ATTLIST td
+    fontName CDATA #IMPLIED
+    fontSize CDATA #IMPLIED
+    fontColor CDATA #IMPLIED
+    leading CDATA #IMPLIED
+    leftPadding CDATA #IMPLIED
+    rightPadding CDATA #IMPLIED
+    topPadding CDATA #IMPLIED
+    bottomPadding CDATA #IMPLIED
+    background CDATA #IMPLIED
+    align CDATA #IMPLIED
+    vAlign CDATA #IMPLIED
+    lineBelowThickness CDATA #IMPLIED
+    lineBelowColor CDATA #IMPLIED
+    lineBelowCap (butt | round | square) #IMPLIED
+    lineBelowCount CDATA #IMPLIED
+    lineBelowSpace CDATA #IMPLIED
+    lineBelowDash CDATA #IMPLIED
+    lineAboveThickness CDATA #IMPLIED
+    lineAboveColor CDATA #IMPLIED
+    lineAboveCap (butt | round | square) #IMPLIED
+    lineAboveCount CDATA #IMPLIED
+    lineAboveSpace CDATA #IMPLIED
+    lineAboveDash CDATA #IMPLIED
+    lineLeftThickness CDATA #IMPLIED
+    lineLeftColor CDATA #IMPLIED
+    lineLeftCap (butt | round | square) #IMPLIED
+    lineLeftCount CDATA #IMPLIED
+    lineLeftSpace CDATA #IMPLIED
+    lineLeftDash CDATA #IMPLIED
+    lineRightThickness CDATA #IMPLIED
+    lineRightColor CDATA #IMPLIED
+    lineRightCap (butt | round | square) #IMPLIED
+    lineRightCount CDATA #IMPLIED
+    lineRightSpace CDATA #IMPLIED
+    lineRightDash CDATA #IMPLIED
+    href CDATA #IMPLIED
+    destination CDATA #IMPLIED
+    rowspan CDATA #IMPLIED
+    colspan CDATA #IMPLIED
+>
+<!ELEMENT topPadder (%GENERICFLOWABLES;)>
+
+<!-- <!ELEMENT pre  (#PCDATA )> -->
+<!-- pageDrawing is for use with simple documents - 
+it specifies one page at a time -->
+<!ELEMENT pageDrawing %DRAWINGOPS;>
+<!--ENTITIES-->
+<!-- RML should always be used with UTF-8 encoding - the following entities 
+from https://www.w3.org/2003/entities/2007/htmlmathml-f.ent
+are the only ones that should be neccesary.
+-->
+<!ENTITY Aacute "&#xC1;"><!--LATIN CAPITAL LETTER A WITH ACUTE-->
+<!ENTITY aacute "&#xE1;"><!--LATIN SMALL LETTER A WITH ACUTE-->
+<!ENTITY Abreve "&#x102;"><!--LATIN CAPITAL LETTER A WITH BREVE-->
+<!ENTITY abreve "&#x103;"><!--LATIN SMALL LETTER A WITH BREVE-->
+<!ENTITY ac "&#x223E;"><!--INVERTED LAZY S-->
+<!ENTITY acd "&#x223F;"><!--SINE WAVE-->
+<!ENTITY acE "&#x223E;&#x333;"><!--INVERTED LAZY S with double underline-->
+<!ENTITY Acirc "&#xC2;"><!--LATIN CAPITAL LETTER A WITH CIRCUMFLEX-->
+<!ENTITY acirc "&#xE2;"><!--LATIN SMALL LETTER A WITH CIRCUMFLEX-->
+<!ENTITY acute "&#xB4;"><!--ACUTE ACCENT-->
+<!ENTITY Acy "&#x410;"><!--CYRILLIC CAPITAL LETTER A-->
+<!ENTITY acy "&#x430;"><!--CYRILLIC SMALL LETTER A-->
+<!ENTITY AElig "&#xC6;"><!--LATIN CAPITAL LETTER AE-->
+<!ENTITY aelig "&#xE6;"><!--LATIN SMALL LETTER AE-->
+<!ENTITY af "&#x2061;"><!--FUNCTION APPLICATION-->
+<!ENTITY Afr "&#x1D504;"><!--MATHEMATICAL FRAKTUR CAPITAL A-->
+<!ENTITY afr "&#x1D51E;"><!--MATHEMATICAL FRAKTUR SMALL A-->
+<!ENTITY Agrave "&#xC0;"><!--LATIN CAPITAL LETTER A WITH GRAVE-->
+<!ENTITY agrave "&#xE0;"><!--LATIN SMALL LETTER A WITH GRAVE-->
+<!ENTITY alefsym "&#x2135;"><!--ALEF SYMBOL-->
+<!ENTITY aleph "&#x2135;"><!--ALEF SYMBOL-->
+<!ENTITY Alpha "&#x391;"><!--GREEK CAPITAL LETTER ALPHA-->
+<!ENTITY alpha "&#x3B1;"><!--GREEK SMALL LETTER ALPHA-->
+<!ENTITY Amacr "&#x100;"><!--LATIN CAPITAL LETTER A WITH MACRON-->
+<!ENTITY amacr "&#x101;"><!--LATIN SMALL LETTER A WITH MACRON-->
+<!ENTITY amalg "&#x2A3F;"><!--AMALGAMATION OR COPRODUCT-->
+<!ENTITY AMP "&#38;#38;"><!--AMPERSAND-->
+<!ENTITY amp "&#38;#38;"><!--AMPERSAND-->
+<!ENTITY And "&#x2A53;"><!--DOUBLE LOGICAL AND-->
+<!ENTITY and "&#x2227;"><!--LOGICAL AND-->
+<!ENTITY andand "&#x2A55;"><!--TWO INTERSECTING LOGICAL AND-->
+<!ENTITY andd "&#x2A5C;"><!--LOGICAL AND WITH HORIZONTAL DASH-->
+<!ENTITY andslope "&#x2A58;"><!--SLOPING LARGE AND-->
+<!ENTITY andv "&#x2A5A;"><!--LOGICAL AND WITH MIDDLE STEM-->
+<!ENTITY ang "&#x2220;"><!--ANGLE-->
+<!ENTITY ange "&#x29A4;"><!--ANGLE WITH UNDERBAR-->
+<!ENTITY angle "&#x2220;"><!--ANGLE-->
+<!ENTITY angmsd "&#x2221;"><!--MEASURED ANGLE-->
+<!ENTITY angmsdaa "&#x29A8;"><!--MEASURED ANGLE WITH OPEN ARM ENDING IN ARROW POINTING UP AND RIGHT-->
+<!ENTITY angmsdab "&#x29A9;"><!--MEASURED ANGLE WITH OPEN ARM ENDING IN ARROW POINTING UP AND LEFT-->
+<!ENTITY angmsdac "&#x29AA;"><!--MEASURED ANGLE WITH OPEN ARM ENDING IN ARROW POINTING DOWN AND RIGHT-->
+<!ENTITY angmsdad "&#x29AB;"><!--MEASURED ANGLE WITH OPEN ARM ENDING IN ARROW POINTING DOWN AND LEFT-->
+<!ENTITY angmsdae "&#x29AC;"><!--MEASURED ANGLE WITH OPEN ARM ENDING IN ARROW POINTING RIGHT AND UP-->
+<!ENTITY angmsdaf "&#x29AD;"><!--MEASURED ANGLE WITH OPEN ARM ENDING IN ARROW POINTING LEFT AND UP-->
+<!ENTITY angmsdag "&#x29AE;"><!--MEASURED ANGLE WITH OPEN ARM ENDING IN ARROW POINTING RIGHT AND DOWN-->
+<!ENTITY angmsdah "&#x29AF;"><!--MEASURED ANGLE WITH OPEN ARM ENDING IN ARROW POINTING LEFT AND DOWN-->
+<!ENTITY angrt "&#x221F;"><!--RIGHT ANGLE-->
+<!ENTITY angrtvb "&#x22BE;"><!--RIGHT ANGLE WITH ARC-->
+<!ENTITY angrtvbd "&#x299D;"><!--MEASURED RIGHT ANGLE WITH DOT-->
+<!ENTITY angsph "&#x2222;"><!--SPHERICAL ANGLE-->
+<!ENTITY angst "&#xC5;"><!--LATIN CAPITAL LETTER A WITH RING ABOVE-->
+<!ENTITY angzarr "&#x237C;"><!--RIGHT ANGLE WITH DOWNWARDS ZIGZAG ARROW-->
+<!ENTITY Aogon "&#x104;"><!--LATIN CAPITAL LETTER A WITH OGONEK-->
+<!ENTITY aogon "&#x105;"><!--LATIN SMALL LETTER A WITH OGONEK-->
+<!ENTITY Aopf "&#x1D538;"><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL A-->
+<!ENTITY aopf "&#x1D552;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL A-->
+<!ENTITY ap "&#x2248;"><!--ALMOST EQUAL TO-->
+<!ENTITY apacir "&#x2A6F;"><!--ALMOST EQUAL TO WITH CIRCUMFLEX ACCENT-->
+<!ENTITY apE "&#x2A70;"><!--APPROXIMATELY EQUAL OR EQUAL TO-->
+<!ENTITY ape "&#x224A;"><!--ALMOST EQUAL OR EQUAL TO-->
+<!ENTITY apid "&#x224B;"><!--TRIPLE TILDE-->
+<!ENTITY apos "&#x27;"><!--APOSTROPHE-->
+<!ENTITY ApplyFunction "&#x2061;"><!--FUNCTION APPLICATION-->
+<!ENTITY approx "&#x2248;"><!--ALMOST EQUAL TO-->
+<!ENTITY approxeq "&#x224A;"><!--ALMOST EQUAL OR EQUAL TO-->
+<!ENTITY Aring "&#xC5;"><!--LATIN CAPITAL LETTER A WITH RING ABOVE-->
+<!ENTITY aring "&#xE5;"><!--LATIN SMALL LETTER A WITH RING ABOVE-->
+<!ENTITY Ascr "&#x1D49C;"><!--MATHEMATICAL SCRIPT CAPITAL A-->
+<!ENTITY ascr "&#x1D4B6;"><!--MATHEMATICAL SCRIPT SMALL A-->
+<!ENTITY Assign "&#x2254;"><!--COLON EQUALS-->
+<!ENTITY ast "&#x2A;"><!--ASTERISK-->
+<!ENTITY asymp "&#x2248;"><!--ALMOST EQUAL TO-->
+<!ENTITY asympeq "&#x224D;"><!--EQUIVALENT TO-->
+<!ENTITY Atilde "&#xC3;"><!--LATIN CAPITAL LETTER A WITH TILDE-->
+<!ENTITY atilde "&#xE3;"><!--LATIN SMALL LETTER A WITH TILDE-->
+<!ENTITY Auml "&#xC4;"><!--LATIN CAPITAL LETTER A WITH DIAERESIS-->
+<!ENTITY auml "&#xE4;"><!--LATIN SMALL LETTER A WITH DIAERESIS-->
+<!ENTITY awconint "&#x2233;"><!--ANTICLOCKWISE CONTOUR INTEGRAL-->
+<!ENTITY awint "&#x2A11;"><!--ANTICLOCKWISE INTEGRATION-->
+<!ENTITY backcong "&#x224C;"><!--ALL EQUAL TO-->
+<!ENTITY backepsilon "&#x3F6;"><!--GREEK REVERSED LUNATE EPSILON SYMBOL-->
+<!ENTITY backprime "&#x2035;"><!--REVERSED PRIME-->
+<!ENTITY backsim "&#x223D;"><!--REVERSED TILDE-->
+<!ENTITY backsimeq "&#x22CD;"><!--REVERSED TILDE EQUALS-->
+<!ENTITY Backslash "&#x2216;"><!--SET MINUS-->
+<!ENTITY Barv "&#x2AE7;"><!--SHORT DOWN TACK WITH OVERBAR-->
+<!ENTITY barvee "&#x22BD;"><!--NOR-->
+<!ENTITY Barwed "&#x2306;"><!--PERSPECTIVE-->
+<!ENTITY barwed "&#x2305;"><!--PROJECTIVE-->
+<!ENTITY barwedge "&#x2305;"><!--PROJECTIVE-->
+<!ENTITY bbrk "&#x23B5;"><!--BOTTOM SQUARE BRACKET-->
+<!ENTITY bbrktbrk "&#x23B6;"><!--BOTTOM SQUARE BRACKET OVER TOP SQUARE BRACKET-->
+<!ENTITY bcong "&#x224C;"><!--ALL EQUAL TO-->
+<!ENTITY Bcy "&#x411;"><!--CYRILLIC CAPITAL LETTER BE-->
+<!ENTITY bcy "&#x431;"><!--CYRILLIC SMALL LETTER BE-->
+<!ENTITY bdquo "&#x201E;"><!--DOUBLE LOW-9 QUOTATION MARK-->
+<!ENTITY becaus "&#x2235;"><!--BECAUSE-->
+<!ENTITY Because "&#x2235;"><!--BECAUSE-->
+<!ENTITY because "&#x2235;"><!--BECAUSE-->
+<!ENTITY bemptyv "&#x29B0;"><!--REVERSED EMPTY SET-->
+<!ENTITY bepsi "&#x3F6;"><!--GREEK REVERSED LUNATE EPSILON SYMBOL-->
+<!ENTITY bernou "&#x212C;"><!--SCRIPT CAPITAL B-->
+<!ENTITY Bernoullis "&#x212C;"><!--SCRIPT CAPITAL B-->
+<!ENTITY Beta "&#x392;"><!--GREEK CAPITAL LETTER BETA-->
+<!ENTITY beta "&#x3B2;"><!--GREEK SMALL LETTER BETA-->
+<!ENTITY beth "&#x2136;"><!--BET SYMBOL-->
+<!ENTITY between "&#x226C;"><!--BETWEEN-->
+<!ENTITY Bfr "&#x1D505;"><!--MATHEMATICAL FRAKTUR CAPITAL B-->
+<!ENTITY bfr "&#x1D51F;"><!--MATHEMATICAL FRAKTUR SMALL B-->
+<!ENTITY bigcap "&#x22C2;"><!--N-ARY INTERSECTION-->
+<!ENTITY bigcirc "&#x25EF;"><!--LARGE CIRCLE-->
+<!ENTITY bigcup "&#x22C3;"><!--N-ARY UNION-->
+<!ENTITY bigodot "&#x2A00;"><!--N-ARY CIRCLED DOT OPERATOR-->
+<!ENTITY bigoplus "&#x2A01;"><!--N-ARY CIRCLED PLUS OPERATOR-->
+<!ENTITY bigotimes "&#x2A02;"><!--N-ARY CIRCLED TIMES OPERATOR-->
+<!ENTITY bigsqcup "&#x2A06;"><!--N-ARY SQUARE UNION OPERATOR-->
+<!ENTITY bigstar "&#x2605;"><!--BLACK STAR-->
+<!ENTITY bigtriangledown "&#x25BD;"><!--WHITE DOWN-POINTING TRIANGLE-->
+<!ENTITY bigtriangleup "&#x25B3;"><!--WHITE UP-POINTING TRIANGLE-->
+<!ENTITY biguplus "&#x2A04;"><!--N-ARY UNION OPERATOR WITH PLUS-->
+<!ENTITY bigvee "&#x22C1;"><!--N-ARY LOGICAL OR-->
+<!ENTITY bigwedge "&#x22C0;"><!--N-ARY LOGICAL AND-->
+<!ENTITY bkarow "&#x290D;"><!--RIGHTWARDS DOUBLE DASH ARROW-->
+<!ENTITY blacklozenge "&#x29EB;"><!--BLACK LOZENGE-->
+<!ENTITY blacksquare "&#x25AA;"><!--BLACK SMALL SQUARE-->
+<!ENTITY blacktriangle "&#x25B4;"><!--BLACK UP-POINTING SMALL TRIANGLE-->
+<!ENTITY blacktriangledown "&#x25BE;"><!--BLACK DOWN-POINTING SMALL TRIANGLE-->
+<!ENTITY blacktriangleleft "&#x25C2;"><!--BLACK LEFT-POINTING SMALL TRIANGLE-->
+<!ENTITY blacktriangleright "&#x25B8;"><!--BLACK RIGHT-POINTING SMALL TRIANGLE-->
+<!ENTITY blank "&#x2423;"><!--OPEN BOX-->
+<!ENTITY blk12 "&#x2592;"><!--MEDIUM SHADE-->
+<!ENTITY blk14 "&#x2591;"><!--LIGHT SHADE-->
+<!ENTITY blk34 "&#x2593;"><!--DARK SHADE-->
+<!ENTITY block "&#x2588;"><!--FULL BLOCK-->
+<!ENTITY bne "&#x3D;&#x20E5;"><!--EQUALS SIGN with reverse slash-->
+<!ENTITY bnequiv "&#x2261;&#x20E5;"><!--IDENTICAL TO with reverse slash-->
+<!ENTITY bNot "&#x2AED;"><!--REVERSED DOUBLE STROKE NOT SIGN-->
+<!ENTITY bnot "&#x2310;"><!--REVERSED NOT SIGN-->
+<!ENTITY Bopf "&#x1D539;"><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL B-->
+<!ENTITY bopf "&#x1D553;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL B-->
+<!ENTITY bot "&#x22A5;"><!--UP TACK-->
+<!ENTITY bottom "&#x22A5;"><!--UP TACK-->
+<!ENTITY bowtie "&#x22C8;"><!--BOWTIE-->
+<!ENTITY boxbox "&#x29C9;"><!--TWO JOINED SQUARES-->
+<!ENTITY boxDL "&#x2557;"><!--BOX DRAWINGS DOUBLE DOWN AND LEFT-->
+<!ENTITY boxDl "&#x2556;"><!--BOX DRAWINGS DOWN DOUBLE AND LEFT SINGLE-->
+<!ENTITY boxdL "&#x2555;"><!--BOX DRAWINGS DOWN SINGLE AND LEFT DOUBLE-->
+<!ENTITY boxdl "&#x2510;"><!--BOX DRAWINGS LIGHT DOWN AND LEFT-->
+<!ENTITY boxDR "&#x2554;"><!--BOX DRAWINGS DOUBLE DOWN AND RIGHT-->
+<!ENTITY boxDr "&#x2553;"><!--BOX DRAWINGS DOWN DOUBLE AND RIGHT SINGLE-->
+<!ENTITY boxdR "&#x2552;"><!--BOX DRAWINGS DOWN SINGLE AND RIGHT DOUBLE-->
+<!ENTITY boxdr "&#x250C;"><!--BOX DRAWINGS LIGHT DOWN AND RIGHT-->
+<!ENTITY boxH "&#x2550;"><!--BOX DRAWINGS DOUBLE HORIZONTAL-->
+<!ENTITY boxh "&#x2500;"><!--BOX DRAWINGS LIGHT HORIZONTAL-->
+<!ENTITY boxHD "&#x2566;"><!--BOX DRAWINGS DOUBLE DOWN AND HORIZONTAL-->
+<!ENTITY boxHd "&#x2564;"><!--BOX DRAWINGS DOWN SINGLE AND HORIZONTAL DOUBLE-->
+<!ENTITY boxhD "&#x2565;"><!--BOX DRAWINGS DOWN DOUBLE AND HORIZONTAL SINGLE-->
+<!ENTITY boxhd "&#x252C;"><!--BOX DRAWINGS LIGHT DOWN AND HORIZONTAL-->
+<!ENTITY boxHU "&#x2569;"><!--BOX DRAWINGS DOUBLE UP AND HORIZONTAL-->
+<!ENTITY boxHu "&#x2567;"><!--BOX DRAWINGS UP SINGLE AND HORIZONTAL DOUBLE-->
+<!ENTITY boxhU "&#x2568;"><!--BOX DRAWINGS UP DOUBLE AND HORIZONTAL SINGLE-->
+<!ENTITY boxhu "&#x2534;"><!--BOX DRAWINGS LIGHT UP AND HORIZONTAL-->
+<!ENTITY boxminus "&#x229F;"><!--SQUARED MINUS-->
+<!ENTITY boxplus "&#x229E;"><!--SQUARED PLUS-->
+<!ENTITY boxtimes "&#x22A0;"><!--SQUARED TIMES-->
+<!ENTITY boxUL "&#x255D;"><!--BOX DRAWINGS DOUBLE UP AND LEFT-->
+<!ENTITY boxUl "&#x255C;"><!--BOX DRAWINGS UP DOUBLE AND LEFT SINGLE-->
+<!ENTITY boxuL "&#x255B;"><!--BOX DRAWINGS UP SINGLE AND LEFT DOUBLE-->
+<!ENTITY boxul "&#x2518;"><!--BOX DRAWINGS LIGHT UP AND LEFT-->
+<!ENTITY boxUR "&#x255A;"><!--BOX DRAWINGS DOUBLE UP AND RIGHT-->
+<!ENTITY boxUr "&#x2559;"><!--BOX DRAWINGS UP DOUBLE AND RIGHT SINGLE-->
+<!ENTITY boxuR "&#x2558;"><!--BOX DRAWINGS UP SINGLE AND RIGHT DOUBLE-->
+<!ENTITY boxur "&#x2514;"><!--BOX DRAWINGS LIGHT UP AND RIGHT-->
+<!ENTITY boxV "&#x2551;"><!--BOX DRAWINGS DOUBLE VERTICAL-->
+<!ENTITY boxv "&#x2502;"><!--BOX DRAWINGS LIGHT VERTICAL-->
+<!ENTITY boxVH "&#x256C;"><!--BOX DRAWINGS DOUBLE VERTICAL AND HORIZONTAL-->
+<!ENTITY boxVh "&#x256B;"><!--BOX DRAWINGS VERTICAL DOUBLE AND HORIZONTAL SINGLE-->
+<!ENTITY boxvH "&#x256A;"><!--BOX DRAWINGS VERTICAL SINGLE AND HORIZONTAL DOUBLE-->
+<!ENTITY boxvh "&#x253C;"><!--BOX DRAWINGS LIGHT VERTICAL AND HORIZONTAL-->
+<!ENTITY boxVL "&#x2563;"><!--BOX DRAWINGS DOUBLE VERTICAL AND LEFT-->
+<!ENTITY boxVl "&#x2562;"><!--BOX DRAWINGS VERTICAL DOUBLE AND LEFT SINGLE-->
+<!ENTITY boxvL "&#x2561;"><!--BOX DRAWINGS VERTICAL SINGLE AND LEFT DOUBLE-->
+<!ENTITY boxvl "&#x2524;"><!--BOX DRAWINGS LIGHT VERTICAL AND LEFT-->
+<!ENTITY boxVR "&#x2560;"><!--BOX DRAWINGS DOUBLE VERTICAL AND RIGHT-->
+<!ENTITY boxVr "&#x255F;"><!--BOX DRAWINGS VERTICAL DOUBLE AND RIGHT SINGLE-->
+<!ENTITY boxvR "&#x255E;"><!--BOX DRAWINGS VERTICAL SINGLE AND RIGHT DOUBLE-->
+<!ENTITY boxvr "&#x251C;"><!--BOX DRAWINGS LIGHT VERTICAL AND RIGHT-->
+<!ENTITY bprime "&#x2035;"><!--REVERSED PRIME-->
+<!ENTITY Breve "&#x2D8;"><!--BREVE-->
+<!ENTITY breve "&#x2D8;"><!--BREVE-->
+<!ENTITY brvbar "&#xA6;"><!--BROKEN BAR-->
+<!ENTITY Bscr "&#x212C;"><!--SCRIPT CAPITAL B-->
+<!ENTITY bscr "&#x1D4B7;"><!--MATHEMATICAL SCRIPT SMALL B-->
+<!ENTITY bsemi "&#x204F;"><!--REVERSED SEMICOLON-->
+<!ENTITY bsim "&#x223D;"><!--REVERSED TILDE-->
+<!ENTITY bsime "&#x22CD;"><!--REVERSED TILDE EQUALS-->
+<!ENTITY bsol "&#x5C;"><!--REVERSE SOLIDUS-->
+<!ENTITY bsolb "&#x29C5;"><!--SQUARED FALLING DIAGONAL SLASH-->
+<!ENTITY bsolhsub "&#x27C8;"><!--REVERSE SOLIDUS PRECEDING SUBSET-->
+<!ENTITY bull "&#x2022;"><!--BULLET-->
+<!ENTITY bullet "&#x2022;"><!--BULLET-->
+<!ENTITY bump "&#x224E;"><!--GEOMETRICALLY EQUIVALENT TO-->
+<!ENTITY bumpE "&#x2AAE;"><!--EQUALS SIGN WITH BUMPY ABOVE-->
+<!ENTITY bumpe "&#x224F;"><!--DIFFERENCE BETWEEN-->
+<!ENTITY Bumpeq "&#x224E;"><!--GEOMETRICALLY EQUIVALENT TO-->
+<!ENTITY bumpeq "&#x224F;"><!--DIFFERENCE BETWEEN-->
+<!ENTITY Cacute "&#x106;"><!--LATIN CAPITAL LETTER C WITH ACUTE-->
+<!ENTITY cacute "&#x107;"><!--LATIN SMALL LETTER C WITH ACUTE-->
+<!ENTITY Cap "&#x22D2;"><!--DOUBLE INTERSECTION-->
+<!ENTITY cap "&#x2229;"><!--INTERSECTION-->
+<!ENTITY capand "&#x2A44;"><!--INTERSECTION WITH LOGICAL AND-->
+<!ENTITY capbrcup "&#x2A49;"><!--INTERSECTION ABOVE BAR ABOVE UNION-->
+<!ENTITY capcap "&#x2A4B;"><!--INTERSECTION BESIDE AND JOINED WITH INTERSECTION-->
+<!ENTITY capcup "&#x2A47;"><!--INTERSECTION ABOVE UNION-->
+<!ENTITY capdot "&#x2A40;"><!--INTERSECTION WITH DOT-->
+<!ENTITY CapitalDifferentialD "&#x2145;"><!--DOUBLE-STRUCK ITALIC CAPITAL D-->
+<!ENTITY caps "&#x2229;&#xFE00;"><!--INTERSECTION with serifs-->
+<!ENTITY caret "&#x2041;"><!--CARET INSERTION POINT-->
+<!ENTITY caron "&#x2C7;"><!--CARON-->
+<!ENTITY Cayleys "&#x212D;"><!--BLACK-LETTER CAPITAL C-->
+<!ENTITY ccaps "&#x2A4D;"><!--CLOSED INTERSECTION WITH SERIFS-->
+<!ENTITY Ccaron "&#x10C;"><!--LATIN CAPITAL LETTER C WITH CARON-->
+<!ENTITY ccaron "&#x10D;"><!--LATIN SMALL LETTER C WITH CARON-->
+<!ENTITY Ccedil "&#xC7;"><!--LATIN CAPITAL LETTER C WITH CEDILLA-->
+<!ENTITY ccedil "&#xE7;"><!--LATIN SMALL LETTER C WITH CEDILLA-->
+<!ENTITY Ccirc "&#x108;"><!--LATIN CAPITAL LETTER C WITH CIRCUMFLEX-->
+<!ENTITY ccirc "&#x109;"><!--LATIN SMALL LETTER C WITH CIRCUMFLEX-->
+<!ENTITY Cconint "&#x2230;"><!--VOLUME INTEGRAL-->
+<!ENTITY ccups "&#x2A4C;"><!--CLOSED UNION WITH SERIFS-->
+<!ENTITY ccupssm "&#x2A50;"><!--CLOSED UNION WITH SERIFS AND SMASH PRODUCT-->
+<!ENTITY Cdot "&#x10A;"><!--LATIN CAPITAL LETTER C WITH DOT ABOVE-->
+<!ENTITY cdot "&#x10B;"><!--LATIN SMALL LETTER C WITH DOT ABOVE-->
+<!ENTITY cedil "&#xB8;"><!--CEDILLA-->
+<!ENTITY Cedilla "&#xB8;"><!--CEDILLA-->
+<!ENTITY cemptyv "&#x29B2;"><!--EMPTY SET WITH SMALL CIRCLE ABOVE-->
+<!ENTITY cent "&#xA2;"><!--CENT SIGN-->
+<!ENTITY CenterDot "&#xB7;"><!--MIDDLE DOT-->
+<!ENTITY centerdot "&#xB7;"><!--MIDDLE DOT-->
+<!ENTITY Cfr "&#x212D;"><!--BLACK-LETTER CAPITAL C-->
+<!ENTITY cfr "&#x1D520;"><!--MATHEMATICAL FRAKTUR SMALL C-->
+<!ENTITY CHcy "&#x427;"><!--CYRILLIC CAPITAL LETTER CHE-->
+<!ENTITY chcy "&#x447;"><!--CYRILLIC SMALL LETTER CHE-->
+<!ENTITY check "&#x2713;"><!--CHECK MARK-->
+<!ENTITY checkmark "&#x2713;"><!--CHECK MARK-->
+<!ENTITY Chi "&#x3A7;"><!--GREEK CAPITAL LETTER CHI-->
+<!ENTITY chi "&#x3C7;"><!--GREEK SMALL LETTER CHI-->
+<!ENTITY cir "&#x25CB;"><!--WHITE CIRCLE-->
+<!ENTITY circ "&#x2C6;"><!--MODIFIER LETTER CIRCUMFLEX ACCENT-->
+<!ENTITY circeq "&#x2257;"><!--RING EQUAL TO-->
+<!ENTITY circlearrowleft "&#x21BA;"><!--ANTICLOCKWISE OPEN CIRCLE ARROW-->
+<!ENTITY circlearrowright "&#x21BB;"><!--CLOCKWISE OPEN CIRCLE ARROW-->
+<!ENTITY circledast "&#x229B;"><!--CIRCLED ASTERISK OPERATOR-->
+<!ENTITY circledcirc "&#x229A;"><!--CIRCLED RING OPERATOR-->
+<!ENTITY circleddash "&#x229D;"><!--CIRCLED DASH-->
+<!ENTITY CircleDot "&#x2299;"><!--CIRCLED DOT OPERATOR-->
+<!ENTITY circledR "&#xAE;"><!--REGISTERED SIGN-->
+<!ENTITY circledS "&#x24C8;"><!--CIRCLED LATIN CAPITAL LETTER S-->
+<!ENTITY CircleMinus "&#x2296;"><!--CIRCLED MINUS-->
+<!ENTITY CirclePlus "&#x2295;"><!--CIRCLED PLUS-->
+<!ENTITY CircleTimes "&#x2297;"><!--CIRCLED TIMES-->
+<!ENTITY cirE "&#x29C3;"><!--CIRCLE WITH TWO HORIZONTAL STROKES TO THE RIGHT-->
+<!ENTITY cire "&#x2257;"><!--RING EQUAL TO-->
+<!ENTITY cirfnint "&#x2A10;"><!--CIRCULATION FUNCTION-->
+<!ENTITY cirmid "&#x2AEF;"><!--VERTICAL LINE WITH CIRCLE ABOVE-->
+<!ENTITY cirscir "&#x29C2;"><!--CIRCLE WITH SMALL CIRCLE TO THE RIGHT-->
+<!ENTITY ClockwiseContourIntegral "&#x2232;"><!--CLOCKWISE CONTOUR INTEGRAL-->
+<!ENTITY CloseCurlyDoubleQuote "&#x201D;"><!--RIGHT DOUBLE QUOTATION MARK-->
+<!ENTITY CloseCurlyQuote "&#x2019;"><!--RIGHT SINGLE QUOTATION MARK-->
+<!ENTITY clubs "&#x2663;"><!--BLACK CLUB SUIT-->
+<!ENTITY clubsuit "&#x2663;"><!--BLACK CLUB SUIT-->
+<!ENTITY Colon "&#x2237;"><!--PROPORTION-->
+<!ENTITY colon "&#x3A;"><!--COLON-->
+<!ENTITY Colone "&#x2A74;"><!--DOUBLE COLON EQUAL-->
+<!ENTITY colone "&#x2254;"><!--COLON EQUALS-->
+<!ENTITY coloneq "&#x2254;"><!--COLON EQUALS-->
+<!ENTITY comma "&#x2C;"><!--COMMA-->
+<!ENTITY commat "&#x40;"><!--COMMERCIAL AT-->
+<!ENTITY comp "&#x2201;"><!--COMPLEMENT-->
+<!ENTITY compfn "&#x2218;"><!--RING OPERATOR-->
+<!ENTITY complement "&#x2201;"><!--COMPLEMENT-->
+<!ENTITY complexes "&#x2102;"><!--DOUBLE-STRUCK CAPITAL C-->
+<!ENTITY cong "&#x2245;"><!--APPROXIMATELY EQUAL TO-->
+<!ENTITY congdot "&#x2A6D;"><!--CONGRUENT WITH DOT ABOVE-->
+<!ENTITY Congruent "&#x2261;"><!--IDENTICAL TO-->
+<!ENTITY Conint "&#x222F;"><!--SURFACE INTEGRAL-->
+<!ENTITY conint "&#x222E;"><!--CONTOUR INTEGRAL-->
+<!ENTITY ContourIntegral "&#x222E;"><!--CONTOUR INTEGRAL-->
+<!ENTITY Copf "&#x2102;"><!--DOUBLE-STRUCK CAPITAL C-->
+<!ENTITY copf "&#x1D554;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL C-->
+<!ENTITY coprod "&#x2210;"><!--N-ARY COPRODUCT-->
+<!ENTITY Coproduct "&#x2210;"><!--N-ARY COPRODUCT-->
+<!ENTITY COPY "&#xA9;"><!--COPYRIGHT SIGN-->
+<!ENTITY copy "&#xA9;"><!--COPYRIGHT SIGN-->
+<!ENTITY copysr "&#x2117;"><!--SOUND RECORDING COPYRIGHT-->
+<!ENTITY CounterClockwiseContourIntegral "&#x2233;"><!--ANTICLOCKWISE CONTOUR INTEGRAL-->
+<!ENTITY crarr "&#x21B5;"><!--DOWNWARDS ARROW WITH CORNER LEFTWARDS-->
+<!ENTITY Cross "&#x2A2F;"><!--VECTOR OR CROSS PRODUCT-->
+<!ENTITY cross "&#x2717;"><!--BALLOT X-->
+<!ENTITY Cscr "&#x1D49E;"><!--MATHEMATICAL SCRIPT CAPITAL C-->
+<!ENTITY cscr "&#x1D4B8;"><!--MATHEMATICAL SCRIPT SMALL C-->
+<!ENTITY csub "&#x2ACF;"><!--CLOSED SUBSET-->
+<!ENTITY csube "&#x2AD1;"><!--CLOSED SUBSET OR EQUAL TO-->
+<!ENTITY csup "&#x2AD0;"><!--CLOSED SUPERSET-->
+<!ENTITY csupe "&#x2AD2;"><!--CLOSED SUPERSET OR EQUAL TO-->
+<!ENTITY ctdot "&#x22EF;"><!--MIDLINE HORIZONTAL ELLIPSIS-->
+<!ENTITY cudarrl "&#x2938;"><!--RIGHT-SIDE ARC CLOCKWISE ARROW-->
+<!ENTITY cudarrr "&#x2935;"><!--ARROW POINTING RIGHTWARDS THEN CURVING DOWNWARDS-->
+<!ENTITY cuepr "&#x22DE;"><!--EQUAL TO OR PRECEDES-->
+<!ENTITY cuesc "&#x22DF;"><!--EQUAL TO OR SUCCEEDS-->
+<!ENTITY cularr "&#x21B6;"><!--ANTICLOCKWISE TOP SEMICIRCLE ARROW-->
+<!ENTITY cularrp "&#x293D;"><!--TOP ARC ANTICLOCKWISE ARROW WITH PLUS-->
+<!ENTITY Cup "&#x22D3;"><!--DOUBLE UNION-->
+<!ENTITY cup "&#x222A;"><!--UNION-->
+<!ENTITY cupbrcap "&#x2A48;"><!--UNION ABOVE BAR ABOVE INTERSECTION-->
+<!ENTITY CupCap "&#x224D;"><!--EQUIVALENT TO-->
+<!ENTITY cupcap "&#x2A46;"><!--UNION ABOVE INTERSECTION-->
+<!ENTITY cupcup "&#x2A4A;"><!--UNION BESIDE AND JOINED WITH UNION-->
+<!ENTITY cupdot "&#x228D;"><!--MULTISET MULTIPLICATION-->
+<!ENTITY cupor "&#x2A45;"><!--UNION WITH LOGICAL OR-->
+<!ENTITY cups "&#x222A;&#xFE00;"><!--UNION with serifs-->
+<!ENTITY curarr "&#x21B7;"><!--CLOCKWISE TOP SEMICIRCLE ARROW-->
+<!ENTITY curarrm "&#x293C;"><!--TOP ARC CLOCKWISE ARROW WITH MINUS-->
+<!ENTITY curlyeqprec "&#x22DE;"><!--EQUAL TO OR PRECEDES-->
+<!ENTITY curlyeqsucc "&#x22DF;"><!--EQUAL TO OR SUCCEEDS-->
+<!ENTITY curlyvee "&#x22CE;"><!--CURLY LOGICAL OR-->
+<!ENTITY curlywedge "&#x22CF;"><!--CURLY LOGICAL AND-->
+<!ENTITY curren "&#xA4;"><!--CURRENCY SIGN-->
+<!ENTITY curvearrowleft "&#x21B6;"><!--ANTICLOCKWISE TOP SEMICIRCLE ARROW-->
+<!ENTITY curvearrowright "&#x21B7;"><!--CLOCKWISE TOP SEMICIRCLE ARROW-->
+<!ENTITY cuvee "&#x22CE;"><!--CURLY LOGICAL OR-->
+<!ENTITY cuwed "&#x22CF;"><!--CURLY LOGICAL AND-->
+<!ENTITY cwconint "&#x2232;"><!--CLOCKWISE CONTOUR INTEGRAL-->
+<!ENTITY cwint "&#x2231;"><!--CLOCKWISE INTEGRAL-->
+<!ENTITY cylcty "&#x232D;"><!--CYLINDRICITY-->
+<!ENTITY Dagger "&#x2021;"><!--DOUBLE DAGGER-->
+<!ENTITY dagger "&#x2020;"><!--DAGGER-->
+<!ENTITY daleth "&#x2138;"><!--DALET SYMBOL-->
+<!ENTITY Darr "&#x21A1;"><!--DOWNWARDS TWO HEADED ARROW-->
+<!ENTITY dArr "&#x21D3;"><!--DOWNWARDS DOUBLE ARROW-->
+<!ENTITY darr "&#x2193;"><!--DOWNWARDS ARROW-->
+<!ENTITY dash "&#x2010;"><!--HYPHEN-->
+<!ENTITY Dashv "&#x2AE4;"><!--VERTICAL BAR DOUBLE LEFT TURNSTILE-->
+<!ENTITY dashv "&#x22A3;"><!--LEFT TACK-->
+<!ENTITY dbkarow "&#x290F;"><!--RIGHTWARDS TRIPLE DASH ARROW-->
+<!ENTITY dblac "&#x2DD;"><!--DOUBLE ACUTE ACCENT-->
+<!ENTITY Dcaron "&#x10E;"><!--LATIN CAPITAL LETTER D WITH CARON-->
+<!ENTITY dcaron "&#x10F;"><!--LATIN SMALL LETTER D WITH CARON-->
+<!ENTITY Dcy "&#x414;"><!--CYRILLIC CAPITAL LETTER DE-->
+<!ENTITY dcy "&#x434;"><!--CYRILLIC SMALL LETTER DE-->
+<!ENTITY DD "&#x2145;"><!--DOUBLE-STRUCK ITALIC CAPITAL D-->
+<!ENTITY dd "&#x2146;"><!--DOUBLE-STRUCK ITALIC SMALL D-->
+<!ENTITY ddagger "&#x2021;"><!--DOUBLE DAGGER-->
+<!ENTITY ddarr "&#x21CA;"><!--DOWNWARDS PAIRED ARROWS-->
+<!ENTITY DDotrahd "&#x2911;"><!--RIGHTWARDS ARROW WITH DOTTED STEM-->
+<!ENTITY ddotseq "&#x2A77;"><!--EQUALS SIGN WITH TWO DOTS ABOVE AND TWO DOTS BELOW-->
+<!ENTITY deg "&#xB0;"><!--DEGREE SIGN-->
+<!ENTITY Del "&#x2207;"><!--NABLA-->
+<!ENTITY Delta "&#x394;"><!--GREEK CAPITAL LETTER DELTA-->
+<!ENTITY delta "&#x3B4;"><!--GREEK SMALL LETTER DELTA-->
+<!ENTITY demptyv "&#x29B1;"><!--EMPTY SET WITH OVERBAR-->
+<!ENTITY dfisht "&#x297F;"><!--DOWN FISH TAIL-->
+<!ENTITY Dfr "&#x1D507;"><!--MATHEMATICAL FRAKTUR CAPITAL D-->
+<!ENTITY dfr "&#x1D521;"><!--MATHEMATICAL FRAKTUR SMALL D-->
+<!ENTITY dHar "&#x2965;"><!--DOWNWARDS HARPOON WITH BARB LEFT BESIDE DOWNWARDS HARPOON WITH BARB RIGHT-->
+<!ENTITY dharl "&#x21C3;"><!--DOWNWARDS HARPOON WITH BARB LEFTWARDS-->
+<!ENTITY dharr "&#x21C2;"><!--DOWNWARDS HARPOON WITH BARB RIGHTWARDS-->
+<!ENTITY DiacriticalAcute "&#xB4;"><!--ACUTE ACCENT-->
+<!ENTITY DiacriticalDot "&#x2D9;"><!--DOT ABOVE-->
+<!ENTITY DiacriticalDoubleAcute "&#x2DD;"><!--DOUBLE ACUTE ACCENT-->
+<!ENTITY DiacriticalGrave "&#x60;"><!--GRAVE ACCENT-->
+<!ENTITY DiacriticalTilde "&#x2DC;"><!--SMALL TILDE-->
+<!ENTITY diam "&#x22C4;"><!--DIAMOND OPERATOR-->
+<!ENTITY Diamond "&#x22C4;"><!--DIAMOND OPERATOR-->
+<!ENTITY diamond "&#x22C4;"><!--DIAMOND OPERATOR-->
+<!ENTITY diamondsuit "&#x2666;"><!--BLACK DIAMOND SUIT-->
+<!ENTITY diams "&#x2666;"><!--BLACK DIAMOND SUIT-->
+<!ENTITY die "&#xA8;"><!--DIAERESIS-->
+<!ENTITY DifferentialD "&#x2146;"><!--DOUBLE-STRUCK ITALIC SMALL D-->
+<!ENTITY digamma "&#x3DD;"><!--GREEK SMALL LETTER DIGAMMA-->
+<!ENTITY disin "&#x22F2;"><!--ELEMENT OF WITH LONG HORIZONTAL STROKE-->
+<!ENTITY div "&#xF7;"><!--DIVISION SIGN-->
+<!ENTITY divide "&#xF7;"><!--DIVISION SIGN-->
+<!ENTITY divideontimes "&#x22C7;"><!--DIVISION TIMES-->
+<!ENTITY divonx "&#x22C7;"><!--DIVISION TIMES-->
+<!ENTITY DJcy "&#x402;"><!--CYRILLIC CAPITAL LETTER DJE-->
+<!ENTITY djcy "&#x452;"><!--CYRILLIC SMALL LETTER DJE-->
+<!ENTITY dlcorn "&#x231E;"><!--BOTTOM LEFT CORNER-->
+<!ENTITY dlcrop "&#x230D;"><!--BOTTOM LEFT CROP-->
+<!ENTITY dollar "&#x24;"><!--DOLLAR SIGN-->
+<!ENTITY Dopf "&#x1D53B;"><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL D-->
+<!ENTITY dopf "&#x1D555;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL D-->
+<!ENTITY Dot "&#xA8;"><!--DIAERESIS-->
+<!ENTITY dot "&#x2D9;"><!--DOT ABOVE-->
+<!ENTITY DotDot " &#x20DC;"><!--COMBINING FOUR DOTS ABOVE-->
+<!ENTITY doteq "&#x2250;"><!--APPROACHES THE LIMIT-->
+<!ENTITY doteqdot "&#x2251;"><!--GEOMETRICALLY EQUAL TO-->
+<!ENTITY DotEqual "&#x2250;"><!--APPROACHES THE LIMIT-->
+<!ENTITY dotminus "&#x2238;"><!--DOT MINUS-->
+<!ENTITY dotplus "&#x2214;"><!--DOT PLUS-->
+<!ENTITY dotsquare "&#x22A1;"><!--SQUARED DOT OPERATOR-->
+<!ENTITY doublebarwedge "&#x2306;"><!--PERSPECTIVE-->
+<!ENTITY DoubleContourIntegral "&#x222F;"><!--SURFACE INTEGRAL-->
+<!ENTITY DoubleDot "&#xA8;"><!--DIAERESIS-->
+<!ENTITY DoubleDownArrow "&#x21D3;"><!--DOWNWARDS DOUBLE ARROW-->
+<!ENTITY DoubleLeftArrow "&#x21D0;"><!--LEFTWARDS DOUBLE ARROW-->
+<!ENTITY DoubleLeftRightArrow "&#x21D4;"><!--LEFT RIGHT DOUBLE ARROW-->
+<!ENTITY DoubleLeftTee "&#x2AE4;"><!--VERTICAL BAR DOUBLE LEFT TURNSTILE-->
+<!ENTITY DoubleLongLeftArrow "&#x27F8;"><!--LONG LEFTWARDS DOUBLE ARROW-->
+<!ENTITY DoubleLongLeftRightArrow "&#x27FA;"><!--LONG LEFT RIGHT DOUBLE ARROW-->
+<!ENTITY DoubleLongRightArrow "&#x27F9;"><!--LONG RIGHTWARDS DOUBLE ARROW-->
+<!ENTITY DoubleRightArrow "&#x21D2;"><!--RIGHTWARDS DOUBLE ARROW-->
+<!ENTITY DoubleRightTee "&#x22A8;"><!--TRUE-->
+<!ENTITY DoubleUpArrow "&#x21D1;"><!--UPWARDS DOUBLE ARROW-->
+<!ENTITY DoubleUpDownArrow "&#x21D5;"><!--UP DOWN DOUBLE ARROW-->
+<!ENTITY DoubleVerticalBar "&#x2225;"><!--PARALLEL TO-->
+<!ENTITY DownArrow "&#x2193;"><!--DOWNWARDS ARROW-->
+<!ENTITY Downarrow "&#x21D3;"><!--DOWNWARDS DOUBLE ARROW-->
+<!ENTITY downarrow "&#x2193;"><!--DOWNWARDS ARROW-->
+<!ENTITY DownArrowBar "&#x2913;"><!--DOWNWARDS ARROW TO BAR-->
+<!ENTITY DownArrowUpArrow "&#x21F5;"><!--DOWNWARDS ARROW LEFTWARDS OF UPWARDS ARROW-->
+<!ENTITY DownBreve " &#x311;"><!--COMBINING INVERTED BREVE-->
+<!ENTITY downdownarrows "&#x21CA;"><!--DOWNWARDS PAIRED ARROWS-->
+<!ENTITY downharpoonleft "&#x21C3;"><!--DOWNWARDS HARPOON WITH BARB LEFTWARDS-->
+<!ENTITY downharpoonright "&#x21C2;"><!--DOWNWARDS HARPOON WITH BARB RIGHTWARDS-->
+<!ENTITY DownLeftRightVector "&#x2950;"><!--LEFT BARB DOWN RIGHT BARB DOWN HARPOON-->
+<!ENTITY DownLeftTeeVector "&#x295E;"><!--LEFTWARDS HARPOON WITH BARB DOWN FROM BAR-->
+<!ENTITY DownLeftVector "&#x21BD;"><!--LEFTWARDS HARPOON WITH BARB DOWNWARDS-->
+<!ENTITY DownLeftVectorBar "&#x2956;"><!--LEFTWARDS HARPOON WITH BARB DOWN TO BAR-->
+<!ENTITY DownRightTeeVector "&#x295F;"><!--RIGHTWARDS HARPOON WITH BARB DOWN FROM BAR-->
+<!ENTITY DownRightVector "&#x21C1;"><!--RIGHTWARDS HARPOON WITH BARB DOWNWARDS-->
+<!ENTITY DownRightVectorBar "&#x2957;"><!--RIGHTWARDS HARPOON WITH BARB DOWN TO BAR-->
+<!ENTITY DownTee "&#x22A4;"><!--DOWN TACK-->
+<!ENTITY DownTeeArrow "&#x21A7;"><!--DOWNWARDS ARROW FROM BAR-->
+<!ENTITY drbkarow "&#x2910;"><!--RIGHTWARDS TWO-HEADED TRIPLE DASH ARROW-->
+<!ENTITY drcorn "&#x231F;"><!--BOTTOM RIGHT CORNER-->
+<!ENTITY drcrop "&#x230C;"><!--BOTTOM RIGHT CROP-->
+<!ENTITY Dscr "&#x1D49F;"><!--MATHEMATICAL SCRIPT CAPITAL D-->
+<!ENTITY dscr "&#x1D4B9;"><!--MATHEMATICAL SCRIPT SMALL D-->
+<!ENTITY DScy "&#x405;"><!--CYRILLIC CAPITAL LETTER DZE-->
+<!ENTITY dscy "&#x455;"><!--CYRILLIC SMALL LETTER DZE-->
+<!ENTITY dsol "&#x29F6;"><!--SOLIDUS WITH OVERBAR-->
+<!ENTITY Dstrok "&#x110;"><!--LATIN CAPITAL LETTER D WITH STROKE-->
+<!ENTITY dstrok "&#x111;"><!--LATIN SMALL LETTER D WITH STROKE-->
+<!ENTITY dtdot "&#x22F1;"><!--DOWN RIGHT DIAGONAL ELLIPSIS-->
+<!ENTITY dtri "&#x25BF;"><!--WHITE DOWN-POINTING SMALL TRIANGLE-->
+<!ENTITY dtrif "&#x25BE;"><!--BLACK DOWN-POINTING SMALL TRIANGLE-->
+<!ENTITY duarr "&#x21F5;"><!--DOWNWARDS ARROW LEFTWARDS OF UPWARDS ARROW-->
+<!ENTITY duhar "&#x296F;"><!--DOWNWARDS HARPOON WITH BARB LEFT BESIDE UPWARDS HARPOON WITH BARB RIGHT-->
+<!ENTITY dwangle "&#x29A6;"><!--OBLIQUE ANGLE OPENING UP-->
+<!ENTITY DZcy "&#x40F;"><!--CYRILLIC CAPITAL LETTER DZHE-->
+<!ENTITY dzcy "&#x45F;"><!--CYRILLIC SMALL LETTER DZHE-->
+<!ENTITY dzigrarr "&#x27FF;"><!--LONG RIGHTWARDS SQUIGGLE ARROW-->
+<!ENTITY Eacute "&#xC9;"><!--LATIN CAPITAL LETTER E WITH ACUTE-->
+<!ENTITY eacute "&#xE9;"><!--LATIN SMALL LETTER E WITH ACUTE-->
+<!ENTITY easter "&#x2A6E;"><!--EQUALS WITH ASTERISK-->
+<!ENTITY Ecaron "&#x11A;"><!--LATIN CAPITAL LETTER E WITH CARON-->
+<!ENTITY ecaron "&#x11B;"><!--LATIN SMALL LETTER E WITH CARON-->
+<!ENTITY ecir "&#x2256;"><!--RING IN EQUAL TO-->
+<!ENTITY Ecirc "&#xCA;"><!--LATIN CAPITAL LETTER E WITH CIRCUMFLEX-->
+<!ENTITY ecirc "&#xEA;"><!--LATIN SMALL LETTER E WITH CIRCUMFLEX-->
+<!ENTITY ecolon "&#x2255;"><!--EQUALS COLON-->
+<!ENTITY Ecy "&#x42D;"><!--CYRILLIC CAPITAL LETTER E-->
+<!ENTITY ecy "&#x44D;"><!--CYRILLIC SMALL LETTER E-->
+<!ENTITY eDDot "&#x2A77;"><!--EQUALS SIGN WITH TWO DOTS ABOVE AND TWO DOTS BELOW-->
+<!ENTITY Edot "&#x116;"><!--LATIN CAPITAL LETTER E WITH DOT ABOVE-->
+<!ENTITY eDot "&#x2251;"><!--GEOMETRICALLY EQUAL TO-->
+<!ENTITY edot "&#x117;"><!--LATIN SMALL LETTER E WITH DOT ABOVE-->
+<!ENTITY ee "&#x2147;"><!--DOUBLE-STRUCK ITALIC SMALL E-->
+<!ENTITY efDot "&#x2252;"><!--APPROXIMATELY EQUAL TO OR THE IMAGE OF-->
+<!ENTITY Efr "&#x1D508;"><!--MATHEMATICAL FRAKTUR CAPITAL E-->
+<!ENTITY efr "&#x1D522;"><!--MATHEMATICAL FRAKTUR SMALL E-->
+<!ENTITY eg "&#x2A9A;"><!--DOUBLE-LINE EQUAL TO OR GREATER-THAN-->
+<!ENTITY Egrave "&#xC8;"><!--LATIN CAPITAL LETTER E WITH GRAVE-->
+<!ENTITY egrave "&#xE8;"><!--LATIN SMALL LETTER E WITH GRAVE-->
+<!ENTITY egs "&#x2A96;"><!--SLANTED EQUAL TO OR GREATER-THAN-->
+<!ENTITY egsdot "&#x2A98;"><!--SLANTED EQUAL TO OR GREATER-THAN WITH DOT INSIDE-->
+<!ENTITY el "&#x2A99;"><!--DOUBLE-LINE EQUAL TO OR LESS-THAN-->
+<!ENTITY Element "&#x2208;"><!--ELEMENT OF-->
+<!ENTITY elinters "&#x23E7;"><!--ELECTRICAL INTERSECTION-->
+<!ENTITY ell "&#x2113;"><!--SCRIPT SMALL L-->
+<!ENTITY els "&#x2A95;"><!--SLANTED EQUAL TO OR LESS-THAN-->
+<!ENTITY elsdot "&#x2A97;"><!--SLANTED EQUAL TO OR LESS-THAN WITH DOT INSIDE-->
+<!ENTITY Emacr "&#x112;"><!--LATIN CAPITAL LETTER E WITH MACRON-->
+<!ENTITY emacr "&#x113;"><!--LATIN SMALL LETTER E WITH MACRON-->
+<!ENTITY empty "&#x2205;"><!--EMPTY SET-->
+<!ENTITY emptyset "&#x2205;"><!--EMPTY SET-->
+<!ENTITY EmptySmallSquare "&#x25FB;"><!--WHITE MEDIUM SQUARE-->
+<!ENTITY emptyv "&#x2205;"><!--EMPTY SET-->
+<!ENTITY EmptyVerySmallSquare "&#x25AB;"><!--WHITE SMALL SQUARE-->
+<!ENTITY emsp "&#x2003;"><!--EM SPACE-->
+<!ENTITY emsp13 "&#x2004;"><!--THREE-PER-EM SPACE-->
+<!ENTITY emsp14 "&#x2005;"><!--FOUR-PER-EM SPACE-->
+<!ENTITY ENG "&#x14A;"><!--LATIN CAPITAL LETTER ENG-->
+<!ENTITY eng "&#x14B;"><!--LATIN SMALL LETTER ENG-->
+<!ENTITY ensp "&#x2002;"><!--EN SPACE-->
+<!ENTITY Eogon "&#x118;"><!--LATIN CAPITAL LETTER E WITH OGONEK-->
+<!ENTITY eogon "&#x119;"><!--LATIN SMALL LETTER E WITH OGONEK-->
+<!ENTITY Eopf "&#x1D53C;"><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL E-->
+<!ENTITY eopf "&#x1D556;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL E-->
+<!ENTITY epar "&#x22D5;"><!--EQUAL AND PARALLEL TO-->
+<!ENTITY eparsl "&#x29E3;"><!--EQUALS SIGN AND SLANTED PARALLEL-->
+<!ENTITY eplus "&#x2A71;"><!--EQUALS SIGN ABOVE PLUS SIGN-->
+<!ENTITY epsi "&#x3B5;"><!--GREEK SMALL LETTER EPSILON-->
+<!ENTITY Epsilon "&#x395;"><!--GREEK CAPITAL LETTER EPSILON-->
+<!ENTITY epsilon "&#x3B5;"><!--GREEK SMALL LETTER EPSILON-->
+<!ENTITY epsiv "&#x3F5;"><!--GREEK LUNATE EPSILON SYMBOL-->
+<!ENTITY eqcirc "&#x2256;"><!--RING IN EQUAL TO-->
+<!ENTITY eqcolon "&#x2255;"><!--EQUALS COLON-->
+<!ENTITY eqsim "&#x2242;"><!--MINUS TILDE-->
+<!ENTITY eqslantgtr "&#x2A96;"><!--SLANTED EQUAL TO OR GREATER-THAN-->
+<!ENTITY eqslantless "&#x2A95;"><!--SLANTED EQUAL TO OR LESS-THAN-->
+<!ENTITY Equal "&#x2A75;"><!--TWO CONSECUTIVE EQUALS SIGNS-->
+<!ENTITY equals "&#x3D;"><!--EQUALS SIGN-->
+<!ENTITY EqualTilde "&#x2242;"><!--MINUS TILDE-->
+<!ENTITY equest "&#x225F;"><!--QUESTIONED EQUAL TO-->
+<!ENTITY Equilibrium "&#x21CC;"><!--RIGHTWARDS HARPOON OVER LEFTWARDS HARPOON-->
+<!ENTITY equiv "&#x2261;"><!--IDENTICAL TO-->
+<!ENTITY equivDD "&#x2A78;"><!--EQUIVALENT WITH FOUR DOTS ABOVE-->
+<!ENTITY eqvparsl "&#x29E5;"><!--IDENTICAL TO AND SLANTED PARALLEL-->
+<!ENTITY erarr "&#x2971;"><!--EQUALS SIGN ABOVE RIGHTWARDS ARROW-->
+<!ENTITY erDot "&#x2253;"><!--IMAGE OF OR APPROXIMATELY EQUAL TO-->
+<!ENTITY Escr "&#x2130;"><!--SCRIPT CAPITAL E-->
+<!ENTITY escr "&#x212F;"><!--SCRIPT SMALL E-->
+<!ENTITY esdot "&#x2250;"><!--APPROACHES THE LIMIT-->
+<!ENTITY Esim "&#x2A73;"><!--EQUALS SIGN ABOVE TILDE OPERATOR-->
+<!ENTITY esim "&#x2242;"><!--MINUS TILDE-->
+<!ENTITY Eta "&#x397;"><!--GREEK CAPITAL LETTER ETA-->
+<!ENTITY eta "&#x3B7;"><!--GREEK SMALL LETTER ETA-->
+<!ENTITY ETH "&#xD0;"><!--LATIN CAPITAL LETTER ETH-->
+<!ENTITY eth "&#xF0;"><!--LATIN SMALL LETTER ETH-->
+<!ENTITY Euml "&#xCB;"><!--LATIN CAPITAL LETTER E WITH DIAERESIS-->
+<!ENTITY euml "&#xEB;"><!--LATIN SMALL LETTER E WITH DIAERESIS-->
+<!ENTITY euro "&#x20AC;"><!--EURO SIGN-->
+<!ENTITY excl "&#x21;"><!--EXCLAMATION MARK-->
+<!ENTITY exist "&#x2203;"><!--THERE EXISTS-->
+<!ENTITY Exists "&#x2203;"><!--THERE EXISTS-->
+<!ENTITY expectation "&#x2130;"><!--SCRIPT CAPITAL E-->
+<!ENTITY ExponentialE "&#x2147;"><!--DOUBLE-STRUCK ITALIC SMALL E-->
+<!ENTITY exponentiale "&#x2147;"><!--DOUBLE-STRUCK ITALIC SMALL E-->
+<!ENTITY fallingdotseq "&#x2252;"><!--APPROXIMATELY EQUAL TO OR THE IMAGE OF-->
+<!ENTITY Fcy "&#x424;"><!--CYRILLIC CAPITAL LETTER EF-->
+<!ENTITY fcy "&#x444;"><!--CYRILLIC SMALL LETTER EF-->
+<!ENTITY female "&#x2640;"><!--FEMALE SIGN-->
+<!ENTITY ffilig "&#xFB03;"><!--LATIN SMALL LIGATURE FFI-->
+<!ENTITY fflig "&#xFB00;"><!--LATIN SMALL LIGATURE FF-->
+<!ENTITY ffllig "&#xFB04;"><!--LATIN SMALL LIGATURE FFL-->
+<!ENTITY Ffr "&#x1D509;"><!--MATHEMATICAL FRAKTUR CAPITAL F-->
+<!ENTITY ffr "&#x1D523;"><!--MATHEMATICAL FRAKTUR SMALL F-->
+<!ENTITY filig "&#xFB01;"><!--LATIN SMALL LIGATURE FI-->
+<!ENTITY FilledSmallSquare "&#x25FC;"><!--BLACK MEDIUM SQUARE-->
+<!ENTITY FilledVerySmallSquare "&#x25AA;"><!--BLACK SMALL SQUARE-->
+<!ENTITY fjlig "&#x66;&#x6A;"><!--fj ligature-->
+<!ENTITY flat "&#x266D;"><!--MUSIC FLAT SIGN-->
+<!ENTITY fllig "&#xFB02;"><!--LATIN SMALL LIGATURE FL-->
+<!ENTITY fltns "&#x25B1;"><!--WHITE PARALLELOGRAM-->
+<!ENTITY fnof "&#x192;"><!--LATIN SMALL LETTER F WITH HOOK-->
+<!ENTITY Fopf "&#x1D53D;"><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL F-->
+<!ENTITY fopf "&#x1D557;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL F-->
+<!ENTITY ForAll "&#x2200;"><!--FOR ALL-->
+<!ENTITY forall "&#x2200;"><!--FOR ALL-->
+<!ENTITY fork "&#x22D4;"><!--PITCHFORK-->
+<!ENTITY forkv "&#x2AD9;"><!--ELEMENT OF OPENING DOWNWARDS-->
+<!ENTITY Fouriertrf "&#x2131;"><!--SCRIPT CAPITAL F-->
+<!ENTITY fpartint "&#x2A0D;"><!--FINITE PART INTEGRAL-->
+<!ENTITY frac12 "&#xBD;"><!--VULGAR FRACTION ONE HALF-->
+<!ENTITY frac13 "&#x2153;"><!--VULGAR FRACTION ONE THIRD-->
+<!ENTITY frac14 "&#xBC;"><!--VULGAR FRACTION ONE QUARTER-->
+<!ENTITY frac15 "&#x2155;"><!--VULGAR FRACTION ONE FIFTH-->
+<!ENTITY frac16 "&#x2159;"><!--VULGAR FRACTION ONE SIXTH-->
+<!ENTITY frac18 "&#x215B;"><!--VULGAR FRACTION ONE EIGHTH-->
+<!ENTITY frac23 "&#x2154;"><!--VULGAR FRACTION TWO THIRDS-->
+<!ENTITY frac25 "&#x2156;"><!--VULGAR FRACTION TWO FIFTHS-->
+<!ENTITY frac34 "&#xBE;"><!--VULGAR FRACTION THREE QUARTERS-->
+<!ENTITY frac35 "&#x2157;"><!--VULGAR FRACTION THREE FIFTHS-->
+<!ENTITY frac38 "&#x215C;"><!--VULGAR FRACTION THREE EIGHTHS-->
+<!ENTITY frac45 "&#x2158;"><!--VULGAR FRACTION FOUR FIFTHS-->
+<!ENTITY frac56 "&#x215A;"><!--VULGAR FRACTION FIVE SIXTHS-->
+<!ENTITY frac58 "&#x215D;"><!--VULGAR FRACTION FIVE EIGHTHS-->
+<!ENTITY frac78 "&#x215E;"><!--VULGAR FRACTION SEVEN EIGHTHS-->
+<!ENTITY frasl "&#x2044;"><!--FRACTION SLASH-->
+<!ENTITY frown "&#x2322;"><!--FROWN-->
+<!ENTITY Fscr "&#x2131;"><!--SCRIPT CAPITAL F-->
+<!ENTITY fscr "&#x1D4BB;"><!--MATHEMATICAL SCRIPT SMALL F-->
+<!ENTITY gacute "&#x1F5;"><!--LATIN SMALL LETTER G WITH ACUTE-->
+<!ENTITY Gamma "&#x393;"><!--GREEK CAPITAL LETTER GAMMA-->
+<!ENTITY gamma "&#x3B3;"><!--GREEK SMALL LETTER GAMMA-->
+<!ENTITY Gammad "&#x3DC;"><!--GREEK LETTER DIGAMMA-->
+<!ENTITY gammad "&#x3DD;"><!--GREEK SMALL LETTER DIGAMMA-->
+<!ENTITY gap "&#x2A86;"><!--GREATER-THAN OR APPROXIMATE-->
+<!ENTITY Gbreve "&#x11E;"><!--LATIN CAPITAL LETTER G WITH BREVE-->
+<!ENTITY gbreve "&#x11F;"><!--LATIN SMALL LETTER G WITH BREVE-->
+<!ENTITY Gcedil "&#x122;"><!--LATIN CAPITAL LETTER G WITH CEDILLA-->
+<!ENTITY Gcirc "&#x11C;"><!--LATIN CAPITAL LETTER G WITH CIRCUMFLEX-->
+<!ENTITY gcirc "&#x11D;"><!--LATIN SMALL LETTER G WITH CIRCUMFLEX-->
+<!ENTITY Gcy "&#x413;"><!--CYRILLIC CAPITAL LETTER GHE-->
+<!ENTITY gcy "&#x433;"><!--CYRILLIC SMALL LETTER GHE-->
+<!ENTITY Gdot "&#x120;"><!--LATIN CAPITAL LETTER G WITH DOT ABOVE-->
+<!ENTITY gdot "&#x121;"><!--LATIN SMALL LETTER G WITH DOT ABOVE-->
+<!ENTITY gE "&#x2267;"><!--GREATER-THAN OVER EQUAL TO-->
+<!ENTITY ge "&#x2265;"><!--GREATER-THAN OR EQUAL TO-->
+<!ENTITY gEl "&#x2A8C;"><!--GREATER-THAN ABOVE DOUBLE-LINE EQUAL ABOVE LESS-THAN-->
+<!ENTITY gel "&#x22DB;"><!--GREATER-THAN EQUAL TO OR LESS-THAN-->
+<!ENTITY geq "&#x2265;"><!--GREATER-THAN OR EQUAL TO-->
+<!ENTITY geqq "&#x2267;"><!--GREATER-THAN OVER EQUAL TO-->
+<!ENTITY geqslant "&#x2A7E;"><!--GREATER-THAN OR SLANTED EQUAL TO-->
+<!ENTITY ges "&#x2A7E;"><!--GREATER-THAN OR SLANTED EQUAL TO-->
+<!ENTITY gescc "&#x2AA9;"><!--GREATER-THAN CLOSED BY CURVE ABOVE SLANTED EQUAL-->
+<!ENTITY gesdot "&#x2A80;"><!--GREATER-THAN OR SLANTED EQUAL TO WITH DOT INSIDE-->
+<!ENTITY gesdoto "&#x2A82;"><!--GREATER-THAN OR SLANTED EQUAL TO WITH DOT ABOVE-->
+<!ENTITY gesdotol "&#x2A84;"><!--GREATER-THAN OR SLANTED EQUAL TO WITH DOT ABOVE LEFT-->
+<!ENTITY gesl "&#x22DB;&#xFE00;"><!--GREATER-THAN slanted EQUAL TO OR LESS-THAN-->
+<!ENTITY gesles "&#x2A94;"><!--GREATER-THAN ABOVE SLANTED EQUAL ABOVE LESS-THAN ABOVE SLANTED EQUAL-->
+<!ENTITY Gfr "&#x1D50A;"><!--MATHEMATICAL FRAKTUR CAPITAL G-->
+<!ENTITY gfr "&#x1D524;"><!--MATHEMATICAL FRAKTUR SMALL G-->
+<!ENTITY Gg "&#x22D9;"><!--VERY MUCH GREATER-THAN-->
+<!ENTITY gg "&#x226B;"><!--MUCH GREATER-THAN-->
+<!ENTITY ggg "&#x22D9;"><!--VERY MUCH GREATER-THAN-->
+<!ENTITY gimel "&#x2137;"><!--GIMEL SYMBOL-->
+<!ENTITY GJcy "&#x403;"><!--CYRILLIC CAPITAL LETTER GJE-->
+<!ENTITY gjcy "&#x453;"><!--CYRILLIC SMALL LETTER GJE-->
+<!ENTITY gl "&#x2277;"><!--GREATER-THAN OR LESS-THAN-->
+<!ENTITY gla "&#x2AA5;"><!--GREATER-THAN BESIDE LESS-THAN-->
+<!ENTITY glE "&#x2A92;"><!--GREATER-THAN ABOVE LESS-THAN ABOVE DOUBLE-LINE EQUAL-->
+<!ENTITY glj "&#x2AA4;"><!--GREATER-THAN OVERLAPPING LESS-THAN-->
+<!ENTITY gnap "&#x2A8A;"><!--GREATER-THAN AND NOT APPROXIMATE-->
+<!ENTITY gnapprox "&#x2A8A;"><!--GREATER-THAN AND NOT APPROXIMATE-->
+<!ENTITY gnE "&#x2269;"><!--GREATER-THAN BUT NOT EQUAL TO-->
+<!ENTITY gne "&#x2A88;"><!--GREATER-THAN AND SINGLE-LINE NOT EQUAL TO-->
+<!ENTITY gneq "&#x2A88;"><!--GREATER-THAN AND SINGLE-LINE NOT EQUAL TO-->
+<!ENTITY gneqq "&#x2269;"><!--GREATER-THAN BUT NOT EQUAL TO-->
+<!ENTITY gnsim "&#x22E7;"><!--GREATER-THAN BUT NOT EQUIVALENT TO-->
+<!ENTITY Gopf "&#x1D53E;"><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL G-->
+<!ENTITY gopf "&#x1D558;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL G-->
+<!ENTITY grave "&#x60;"><!--GRAVE ACCENT-->
+<!ENTITY GreaterEqual "&#x2265;"><!--GREATER-THAN OR EQUAL TO-->
+<!ENTITY GreaterEqualLess "&#x22DB;"><!--GREATER-THAN EQUAL TO OR LESS-THAN-->
+<!ENTITY GreaterFullEqual "&#x2267;"><!--GREATER-THAN OVER EQUAL TO-->
+<!ENTITY GreaterGreater "&#x2AA2;"><!--DOUBLE NESTED GREATER-THAN-->
+<!ENTITY GreaterLess "&#x2277;"><!--GREATER-THAN OR LESS-THAN-->
+<!ENTITY GreaterSlantEqual "&#x2A7E;"><!--GREATER-THAN OR SLANTED EQUAL TO-->
+<!ENTITY GreaterTilde "&#x2273;"><!--GREATER-THAN OR EQUIVALENT TO-->
+<!ENTITY Gscr "&#x1D4A2;"><!--MATHEMATICAL SCRIPT CAPITAL G-->
+<!ENTITY gscr "&#x210A;"><!--SCRIPT SMALL G-->
+<!ENTITY gsim "&#x2273;"><!--GREATER-THAN OR EQUIVALENT TO-->
+<!ENTITY gsime "&#x2A8E;"><!--GREATER-THAN ABOVE SIMILAR OR EQUAL-->
+<!ENTITY gsiml "&#x2A90;"><!--GREATER-THAN ABOVE SIMILAR ABOVE LESS-THAN-->
+<!ENTITY GT "&#x3E;"><!--GREATER-THAN SIGN-->
+<!ENTITY Gt "&#x226B;"><!--MUCH GREATER-THAN-->
+<!ENTITY gt "&#x3E;"><!--GREATER-THAN SIGN-->
+<!ENTITY gtcc "&#x2AA7;"><!--GREATER-THAN CLOSED BY CURVE-->
+<!ENTITY gtcir "&#x2A7A;"><!--GREATER-THAN WITH CIRCLE INSIDE-->
+<!ENTITY gtdot "&#x22D7;"><!--GREATER-THAN WITH DOT-->
+<!ENTITY gtlPar "&#x2995;"><!--DOUBLE LEFT ARC GREATER-THAN BRACKET-->
+<!ENTITY gtquest "&#x2A7C;"><!--GREATER-THAN WITH QUESTION MARK ABOVE-->
+<!ENTITY gtrapprox "&#x2A86;"><!--GREATER-THAN OR APPROXIMATE-->
+<!ENTITY gtrarr "&#x2978;"><!--GREATER-THAN ABOVE RIGHTWARDS ARROW-->
+<!ENTITY gtrdot "&#x22D7;"><!--GREATER-THAN WITH DOT-->
+<!ENTITY gtreqless "&#x22DB;"><!--GREATER-THAN EQUAL TO OR LESS-THAN-->
+<!ENTITY gtreqqless "&#x2A8C;"><!--GREATER-THAN ABOVE DOUBLE-LINE EQUAL ABOVE LESS-THAN-->
+<!ENTITY gtrless "&#x2277;"><!--GREATER-THAN OR LESS-THAN-->
+<!ENTITY gtrsim "&#x2273;"><!--GREATER-THAN OR EQUIVALENT TO-->
+<!ENTITY gvertneqq "&#x2269;&#xFE00;"><!--GREATER-THAN BUT NOT EQUAL TO - with vertical stroke-->
+<!ENTITY gvnE "&#x2269;&#xFE00;"><!--GREATER-THAN BUT NOT EQUAL TO - with vertical stroke-->
+<!ENTITY Hacek "&#x2C7;"><!--CARON-->
+<!ENTITY hairsp "&#x200A;"><!--HAIR SPACE-->
+<!ENTITY half "&#xBD;"><!--VULGAR FRACTION ONE HALF-->
+<!ENTITY hamilt "&#x210B;"><!--SCRIPT CAPITAL H-->
+<!ENTITY HARDcy "&#x42A;"><!--CYRILLIC CAPITAL LETTER HARD SIGN-->
+<!ENTITY hardcy "&#x44A;"><!--CYRILLIC SMALL LETTER HARD SIGN-->
+<!ENTITY hArr "&#x21D4;"><!--LEFT RIGHT DOUBLE ARROW-->
+<!ENTITY harr "&#x2194;"><!--LEFT RIGHT ARROW-->
+<!ENTITY harrcir "&#x2948;"><!--LEFT RIGHT ARROW THROUGH SMALL CIRCLE-->
+<!ENTITY harrw "&#x21AD;"><!--LEFT RIGHT WAVE ARROW-->
+<!ENTITY Hat "&#x5E;"><!--CIRCUMFLEX ACCENT-->
+<!ENTITY hbar "&#x210F;"><!--PLANCK CONSTANT OVER TWO PI-->
+<!ENTITY Hcirc "&#x124;"><!--LATIN CAPITAL LETTER H WITH CIRCUMFLEX-->
+<!ENTITY hcirc "&#x125;"><!--LATIN SMALL LETTER H WITH CIRCUMFLEX-->
+<!ENTITY hearts "&#x2665;"><!--BLACK HEART SUIT-->
+<!ENTITY heartsuit "&#x2665;"><!--BLACK HEART SUIT-->
+<!ENTITY hellip "&#x2026;"><!--HORIZONTAL ELLIPSIS-->
+<!ENTITY hercon "&#x22B9;"><!--HERMITIAN CONJUGATE MATRIX-->
+<!ENTITY Hfr "&#x210C;"><!--BLACK-LETTER CAPITAL H-->
+<!ENTITY hfr "&#x1D525;"><!--MATHEMATICAL FRAKTUR SMALL H-->
+<!ENTITY HilbertSpace "&#x210B;"><!--SCRIPT CAPITAL H-->
+<!ENTITY hksearow "&#x2925;"><!--SOUTH EAST ARROW WITH HOOK-->
+<!ENTITY hkswarow "&#x2926;"><!--SOUTH WEST ARROW WITH HOOK-->
+<!ENTITY hoarr "&#x21FF;"><!--LEFT RIGHT OPEN-HEADED ARROW-->
+<!ENTITY homtht "&#x223B;"><!--HOMOTHETIC-->
+<!ENTITY hookleftarrow "&#x21A9;"><!--LEFTWARDS ARROW WITH HOOK-->
+<!ENTITY hookrightarrow "&#x21AA;"><!--RIGHTWARDS ARROW WITH HOOK-->
+<!ENTITY Hopf "&#x210D;"><!--DOUBLE-STRUCK CAPITAL H-->
+<!ENTITY hopf "&#x1D559;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL H-->
+<!ENTITY horbar "&#x2015;"><!--HORIZONTAL BAR-->
+<!ENTITY HorizontalLine "&#x2500;"><!--BOX DRAWINGS LIGHT HORIZONTAL-->
+<!ENTITY Hscr "&#x210B;"><!--SCRIPT CAPITAL H-->
+<!ENTITY hscr "&#x1D4BD;"><!--MATHEMATICAL SCRIPT SMALL H-->
+<!ENTITY hslash "&#x210F;"><!--PLANCK CONSTANT OVER TWO PI-->
+<!ENTITY Hstrok "&#x126;"><!--LATIN CAPITAL LETTER H WITH STROKE-->
+<!ENTITY hstrok "&#x127;"><!--LATIN SMALL LETTER H WITH STROKE-->
+<!ENTITY HumpDownHump "&#x224E;"><!--GEOMETRICALLY EQUIVALENT TO-->
+<!ENTITY HumpEqual "&#x224F;"><!--DIFFERENCE BETWEEN-->
+<!ENTITY hybull "&#x2043;"><!--HYPHEN BULLET-->
+<!ENTITY hyphen "&#x2010;"><!--HYPHEN-->
+<!ENTITY Iacute "&#xCD;"><!--LATIN CAPITAL LETTER I WITH ACUTE-->
+<!ENTITY iacute "&#xED;"><!--LATIN SMALL LETTER I WITH ACUTE-->
+<!ENTITY ic "&#x2063;"><!--INVISIBLE SEPARATOR-->
+<!ENTITY Icirc "&#xCE;"><!--LATIN CAPITAL LETTER I WITH CIRCUMFLEX-->
+<!ENTITY icirc "&#xEE;"><!--LATIN SMALL LETTER I WITH CIRCUMFLEX-->
+<!ENTITY Icy "&#x418;"><!--CYRILLIC CAPITAL LETTER I-->
+<!ENTITY icy "&#x438;"><!--CYRILLIC SMALL LETTER I-->
+<!ENTITY Idot "&#x130;"><!--LATIN CAPITAL LETTER I WITH DOT ABOVE-->
+<!ENTITY IEcy "&#x415;"><!--CYRILLIC CAPITAL LETTER IE-->
+<!ENTITY iecy "&#x435;"><!--CYRILLIC SMALL LETTER IE-->
+<!ENTITY iexcl "&#xA1;"><!--INVERTED EXCLAMATION MARK-->
+<!ENTITY iff "&#x21D4;"><!--LEFT RIGHT DOUBLE ARROW-->
+<!ENTITY Ifr "&#x2111;"><!--BLACK-LETTER CAPITAL I-->
+<!ENTITY ifr "&#x1D526;"><!--MATHEMATICAL FRAKTUR SMALL I-->
+<!ENTITY Igrave "&#xCC;"><!--LATIN CAPITAL LETTER I WITH GRAVE-->
+<!ENTITY igrave "&#xEC;"><!--LATIN SMALL LETTER I WITH GRAVE-->
+<!ENTITY ii "&#x2148;"><!--DOUBLE-STRUCK ITALIC SMALL I-->
+<!ENTITY iiiint "&#x2A0C;"><!--QUADRUPLE INTEGRAL OPERATOR-->
+<!ENTITY iiint "&#x222D;"><!--TRIPLE INTEGRAL-->
+<!ENTITY iinfin "&#x29DC;"><!--INCOMPLETE INFINITY-->
+<!ENTITY iiota "&#x2129;"><!--TURNED GREEK SMALL LETTER IOTA-->
+<!ENTITY IJlig "&#x132;"><!--LATIN CAPITAL LIGATURE IJ-->
+<!ENTITY ijlig "&#x133;"><!--LATIN SMALL LIGATURE IJ-->
+<!ENTITY Im "&#x2111;"><!--BLACK-LETTER CAPITAL I-->
+<!ENTITY Imacr "&#x12A;"><!--LATIN CAPITAL LETTER I WITH MACRON-->
+<!ENTITY imacr "&#x12B;"><!--LATIN SMALL LETTER I WITH MACRON-->
+<!ENTITY image "&#x2111;"><!--BLACK-LETTER CAPITAL I-->
+<!ENTITY ImaginaryI "&#x2148;"><!--DOUBLE-STRUCK ITALIC SMALL I-->
+<!ENTITY imagline "&#x2110;"><!--SCRIPT CAPITAL I-->
+<!ENTITY imagpart "&#x2111;"><!--BLACK-LETTER CAPITAL I-->
+<!ENTITY imath "&#x131;"><!--LATIN SMALL LETTER DOTLESS I-->
+<!ENTITY imof "&#x22B7;"><!--IMAGE OF-->
+<!ENTITY imped "&#x1B5;"><!--LATIN CAPITAL LETTER Z WITH STROKE-->
+<!ENTITY Implies "&#x21D2;"><!--RIGHTWARDS DOUBLE ARROW-->
+<!ENTITY in "&#x2208;"><!--ELEMENT OF-->
+<!ENTITY incare "&#x2105;"><!--CARE OF-->
+<!ENTITY infin "&#x221E;"><!--INFINITY-->
+<!ENTITY infintie "&#x29DD;"><!--TIE OVER INFINITY-->
+<!ENTITY inodot "&#x131;"><!--LATIN SMALL LETTER DOTLESS I-->
+<!ENTITY Int "&#x222C;"><!--DOUBLE INTEGRAL-->
+<!ENTITY int "&#x222B;"><!--INTEGRAL-->
+<!ENTITY intcal "&#x22BA;"><!--INTERCALATE-->
+<!ENTITY integers "&#x2124;"><!--DOUBLE-STRUCK CAPITAL Z-->
+<!ENTITY Integral "&#x222B;"><!--INTEGRAL-->
+<!ENTITY intercal "&#x22BA;"><!--INTERCALATE-->
+<!ENTITY Intersection "&#x22C2;"><!--N-ARY INTERSECTION-->
+<!ENTITY intlarhk "&#x2A17;"><!--INTEGRAL WITH LEFTWARDS ARROW WITH HOOK-->
+<!ENTITY intprod "&#x2A3C;"><!--INTERIOR PRODUCT-->
+<!ENTITY InvisibleComma "&#x2063;"><!--INVISIBLE SEPARATOR-->
+<!ENTITY InvisibleTimes "&#x2062;"><!--INVISIBLE TIMES-->
+<!ENTITY IOcy "&#x401;"><!--CYRILLIC CAPITAL LETTER IO-->
+<!ENTITY iocy "&#x451;"><!--CYRILLIC SMALL LETTER IO-->
+<!ENTITY Iogon "&#x12E;"><!--LATIN CAPITAL LETTER I WITH OGONEK-->
+<!ENTITY iogon "&#x12F;"><!--LATIN SMALL LETTER I WITH OGONEK-->
+<!ENTITY Iopf "&#x1D540;"><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL I-->
+<!ENTITY iopf "&#x1D55A;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL I-->
+<!ENTITY Iota "&#x399;"><!--GREEK CAPITAL LETTER IOTA-->
+<!ENTITY iota "&#x3B9;"><!--GREEK SMALL LETTER IOTA-->
+<!ENTITY iprod "&#x2A3C;"><!--INTERIOR PRODUCT-->
+<!ENTITY iquest "&#xBF;"><!--INVERTED QUESTION MARK-->
+<!ENTITY Iscr "&#x2110;"><!--SCRIPT CAPITAL I-->
+<!ENTITY iscr "&#x1D4BE;"><!--MATHEMATICAL SCRIPT SMALL I-->
+<!ENTITY isin "&#x2208;"><!--ELEMENT OF-->
+<!ENTITY isindot "&#x22F5;"><!--ELEMENT OF WITH DOT ABOVE-->
+<!ENTITY isinE "&#x22F9;"><!--ELEMENT OF WITH TWO HORIZONTAL STROKES-->
+<!ENTITY isins "&#x22F4;"><!--SMALL ELEMENT OF WITH VERTICAL BAR AT END OF HORIZONTAL STROKE-->
+<!ENTITY isinsv "&#x22F3;"><!--ELEMENT OF WITH VERTICAL BAR AT END OF HORIZONTAL STROKE-->
+<!ENTITY isinv "&#x2208;"><!--ELEMENT OF-->
+<!ENTITY it "&#x2062;"><!--INVISIBLE TIMES-->
+<!ENTITY Itilde "&#x128;"><!--LATIN CAPITAL LETTER I WITH TILDE-->
+<!ENTITY itilde "&#x129;"><!--LATIN SMALL LETTER I WITH TILDE-->
+<!ENTITY Iukcy "&#x406;"><!--CYRILLIC CAPITAL LETTER BYELORUSSIAN-UKRAINIAN I-->
+<!ENTITY iukcy "&#x456;"><!--CYRILLIC SMALL LETTER BYELORUSSIAN-UKRAINIAN I-->
+<!ENTITY Iuml "&#xCF;"><!--LATIN CAPITAL LETTER I WITH DIAERESIS-->
+<!ENTITY iuml "&#xEF;"><!--LATIN SMALL LETTER I WITH DIAERESIS-->
+<!ENTITY Jcirc "&#x134;"><!--LATIN CAPITAL LETTER J WITH CIRCUMFLEX-->
+<!ENTITY jcirc "&#x135;"><!--LATIN SMALL LETTER J WITH CIRCUMFLEX-->
+<!ENTITY Jcy "&#x419;"><!--CYRILLIC CAPITAL LETTER SHORT I-->
+<!ENTITY jcy "&#x439;"><!--CYRILLIC SMALL LETTER SHORT I-->
+<!ENTITY Jfr "&#x1D50D;"><!--MATHEMATICAL FRAKTUR CAPITAL J-->
+<!ENTITY jfr "&#x1D527;"><!--MATHEMATICAL FRAKTUR SMALL J-->
+<!ENTITY jmath "&#x237;"><!--LATIN SMALL LETTER DOTLESS J-->
+<!ENTITY Jopf "&#x1D541;"><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL J-->
+<!ENTITY jopf "&#x1D55B;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL J-->
+<!ENTITY Jscr "&#x1D4A5;"><!--MATHEMATICAL SCRIPT CAPITAL J-->
+<!ENTITY jscr "&#x1D4BF;"><!--MATHEMATICAL SCRIPT SMALL J-->
+<!ENTITY Jsercy "&#x408;"><!--CYRILLIC CAPITAL LETTER JE-->
+<!ENTITY jsercy "&#x458;"><!--CYRILLIC SMALL LETTER JE-->
+<!ENTITY Jukcy "&#x404;"><!--CYRILLIC CAPITAL LETTER UKRAINIAN IE-->
+<!ENTITY jukcy "&#x454;"><!--CYRILLIC SMALL LETTER UKRAINIAN IE-->
+<!ENTITY Kappa "&#x39A;"><!--GREEK CAPITAL LETTER KAPPA-->
+<!ENTITY kappa "&#x3BA;"><!--GREEK SMALL LETTER KAPPA-->
+<!ENTITY kappav "&#x3F0;"><!--GREEK KAPPA SYMBOL-->
+<!ENTITY Kcedil "&#x136;"><!--LATIN CAPITAL LETTER K WITH CEDILLA-->
+<!ENTITY kcedil "&#x137;"><!--LATIN SMALL LETTER K WITH CEDILLA-->
+<!ENTITY Kcy "&#x41A;"><!--CYRILLIC CAPITAL LETTER KA-->
+<!ENTITY kcy "&#x43A;"><!--CYRILLIC SMALL LETTER KA-->
+<!ENTITY Kfr "&#x1D50E;"><!--MATHEMATICAL FRAKTUR CAPITAL K-->
+<!ENTITY kfr "&#x1D528;"><!--MATHEMATICAL FRAKTUR SMALL K-->
+<!ENTITY kgreen "&#x138;"><!--LATIN SMALL LETTER KRA-->
+<!ENTITY KHcy "&#x425;"><!--CYRILLIC CAPITAL LETTER HA-->
+<!ENTITY khcy "&#x445;"><!--CYRILLIC SMALL LETTER HA-->
+<!ENTITY KJcy "&#x40C;"><!--CYRILLIC CAPITAL LETTER KJE-->
+<!ENTITY kjcy "&#x45C;"><!--CYRILLIC SMALL LETTER KJE-->
+<!ENTITY Kopf "&#x1D542;"><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL K-->
+<!ENTITY kopf "&#x1D55C;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL K-->
+<!ENTITY Kscr "&#x1D4A6;"><!--MATHEMATICAL SCRIPT CAPITAL K-->
+<!ENTITY kscr "&#x1D4C0;"><!--MATHEMATICAL SCRIPT SMALL K-->
+<!ENTITY lAarr "&#x21DA;"><!--LEFTWARDS TRIPLE ARROW-->
+<!ENTITY Lacute "&#x139;"><!--LATIN CAPITAL LETTER L WITH ACUTE-->
+<!ENTITY lacute "&#x13A;"><!--LATIN SMALL LETTER L WITH ACUTE-->
+<!ENTITY laemptyv "&#x29B4;"><!--EMPTY SET WITH LEFT ARROW ABOVE-->
+<!ENTITY lagran "&#x2112;"><!--SCRIPT CAPITAL L-->
+<!ENTITY Lambda "&#x39B;"><!--GREEK CAPITAL LETTER LAMDA-->
+<!ENTITY lambda "&#x3BB;"><!--GREEK SMALL LETTER LAMDA-->
+<!ENTITY Lang "&#x27EA;"><!--MATHEMATICAL LEFT DOUBLE ANGLE BRACKET-->
+<!ENTITY lang "&#x27E8;"><!--MATHEMATICAL LEFT ANGLE BRACKET-->
+<!ENTITY langd "&#x2991;"><!--LEFT ANGLE BRACKET WITH DOT-->
+<!ENTITY langle "&#x27E8;"><!--MATHEMATICAL LEFT ANGLE BRACKET-->
+<!ENTITY lap "&#x2A85;"><!--LESS-THAN OR APPROXIMATE-->
+<!ENTITY Laplacetrf "&#x2112;"><!--SCRIPT CAPITAL L-->
+<!ENTITY laquo "&#xAB;"><!--LEFT-POINTING DOUBLE ANGLE QUOTATION MARK-->
+<!ENTITY Larr "&#x219E;"><!--LEFTWARDS TWO HEADED ARROW-->
+<!ENTITY lArr "&#x21D0;"><!--LEFTWARDS DOUBLE ARROW-->
+<!ENTITY larr "&#x2190;"><!--LEFTWARDS ARROW-->
+<!ENTITY larrb "&#x21E4;"><!--LEFTWARDS ARROW TO BAR-->
+<!ENTITY larrbfs "&#x291F;"><!--LEFTWARDS ARROW FROM BAR TO BLACK DIAMOND-->
+<!ENTITY larrfs "&#x291D;"><!--LEFTWARDS ARROW TO BLACK DIAMOND-->
+<!ENTITY larrhk "&#x21A9;"><!--LEFTWARDS ARROW WITH HOOK-->
+<!ENTITY larrlp "&#x21AB;"><!--LEFTWARDS ARROW WITH LOOP-->
+<!ENTITY larrpl "&#x2939;"><!--LEFT-SIDE ARC ANTICLOCKWISE ARROW-->
+<!ENTITY larrsim "&#x2973;"><!--LEFTWARDS ARROW ABOVE TILDE OPERATOR-->
+<!ENTITY larrtl "&#x21A2;"><!--LEFTWARDS ARROW WITH TAIL-->
+<!ENTITY lat "&#x2AAB;"><!--LARGER THAN-->
+<!ENTITY lAtail "&#x291B;"><!--LEFTWARDS DOUBLE ARROW-TAIL-->
+<!ENTITY latail "&#x2919;"><!--LEFTWARDS ARROW-TAIL-->
+<!ENTITY late "&#x2AAD;"><!--LARGER THAN OR EQUAL TO-->
+<!ENTITY lates "&#x2AAD;&#xFE00;"><!--LARGER THAN OR slanted EQUAL-->
+<!ENTITY lBarr "&#x290E;"><!--LEFTWARDS TRIPLE DASH ARROW-->
+<!ENTITY lbarr "&#x290C;"><!--LEFTWARDS DOUBLE DASH ARROW-->
+<!ENTITY lbbrk "&#x2772;"><!--LIGHT LEFT TORTOISE SHELL BRACKET ORNAMENT-->
+<!ENTITY lbrace "&#x7B;"><!--LEFT CURLY BRACKET-->
+<!ENTITY lbrack "&#x5B;"><!--LEFT SQUARE BRACKET-->
+<!ENTITY lbrke "&#x298B;"><!--LEFT SQUARE BRACKET WITH UNDERBAR-->
+<!ENTITY lbrksld "&#x298F;"><!--LEFT SQUARE BRACKET WITH TICK IN BOTTOM CORNER-->
+<!ENTITY lbrkslu "&#x298D;"><!--LEFT SQUARE BRACKET WITH TICK IN TOP CORNER-->
+<!ENTITY Lcaron "&#x13D;"><!--LATIN CAPITAL LETTER L WITH CARON-->
+<!ENTITY lcaron "&#x13E;"><!--LATIN SMALL LETTER L WITH CARON-->
+<!ENTITY Lcedil "&#x13B;"><!--LATIN CAPITAL LETTER L WITH CEDILLA-->
+<!ENTITY lcedil "&#x13C;"><!--LATIN SMALL LETTER L WITH CEDILLA-->
+<!ENTITY lceil "&#x2308;"><!--LEFT CEILING-->
+<!ENTITY lcub "&#x7B;"><!--LEFT CURLY BRACKET-->
+<!ENTITY Lcy "&#x41B;"><!--CYRILLIC CAPITAL LETTER EL-->
+<!ENTITY lcy "&#x43B;"><!--CYRILLIC SMALL LETTER EL-->
+<!ENTITY ldca "&#x2936;"><!--ARROW POINTING DOWNWARDS THEN CURVING LEFTWARDS-->
+<!ENTITY ldquo "&#x201C;"><!--LEFT DOUBLE QUOTATION MARK-->
+<!ENTITY ldquor "&#x201E;"><!--DOUBLE LOW-9 QUOTATION MARK-->
+<!ENTITY ldrdhar "&#x2967;"><!--LEFTWARDS HARPOON WITH BARB DOWN ABOVE RIGHTWARDS HARPOON WITH BARB DOWN-->
+<!ENTITY ldrushar "&#x294B;"><!--LEFT BARB DOWN RIGHT BARB UP HARPOON-->
+<!ENTITY ldsh "&#x21B2;"><!--DOWNWARDS ARROW WITH TIP LEFTWARDS-->
+<!ENTITY lE "&#x2266;"><!--LESS-THAN OVER EQUAL TO-->
+<!ENTITY le "&#x2264;"><!--LESS-THAN OR EQUAL TO-->
+<!ENTITY LeftAngleBracket "&#x27E8;"><!--MATHEMATICAL LEFT ANGLE BRACKET-->
+<!ENTITY LeftArrow "&#x2190;"><!--LEFTWARDS ARROW-->
+<!ENTITY Leftarrow "&#x21D0;"><!--LEFTWARDS DOUBLE ARROW-->
+<!ENTITY leftarrow "&#x2190;"><!--LEFTWARDS ARROW-->
+<!ENTITY LeftArrowBar "&#x21E4;"><!--LEFTWARDS ARROW TO BAR-->
+<!ENTITY LeftArrowRightArrow "&#x21C6;"><!--LEFTWARDS ARROW OVER RIGHTWARDS ARROW-->
+<!ENTITY leftarrowtail "&#x21A2;"><!--LEFTWARDS ARROW WITH TAIL-->
+<!ENTITY LeftCeiling "&#x2308;"><!--LEFT CEILING-->
+<!ENTITY LeftDoubleBracket "&#x27E6;"><!--MATHEMATICAL LEFT WHITE SQUARE BRACKET-->
+<!ENTITY LeftDownTeeVector "&#x2961;"><!--DOWNWARDS HARPOON WITH BARB LEFT FROM BAR-->
+<!ENTITY LeftDownVector "&#x21C3;"><!--DOWNWARDS HARPOON WITH BARB LEFTWARDS-->
+<!ENTITY LeftDownVectorBar "&#x2959;"><!--DOWNWARDS HARPOON WITH BARB LEFT TO BAR-->
+<!ENTITY LeftFloor "&#x230A;"><!--LEFT FLOOR-->
+<!ENTITY leftharpoondown "&#x21BD;"><!--LEFTWARDS HARPOON WITH BARB DOWNWARDS-->
+<!ENTITY leftharpoonup "&#x21BC;"><!--LEFTWARDS HARPOON WITH BARB UPWARDS-->
+<!ENTITY leftleftarrows "&#x21C7;"><!--LEFTWARDS PAIRED ARROWS-->
+<!ENTITY LeftRightArrow "&#x2194;"><!--LEFT RIGHT ARROW-->
+<!ENTITY Leftrightarrow "&#x21D4;"><!--LEFT RIGHT DOUBLE ARROW-->
+<!ENTITY leftrightarrow "&#x2194;"><!--LEFT RIGHT ARROW-->
+<!ENTITY leftrightarrows "&#x21C6;"><!--LEFTWARDS ARROW OVER RIGHTWARDS ARROW-->
+<!ENTITY leftrightharpoons "&#x21CB;"><!--LEFTWARDS HARPOON OVER RIGHTWARDS HARPOON-->
+<!ENTITY leftrightsquigarrow "&#x21AD;"><!--LEFT RIGHT WAVE ARROW-->
+<!ENTITY LeftRightVector "&#x294E;"><!--LEFT BARB UP RIGHT BARB UP HARPOON-->
+<!ENTITY LeftTee "&#x22A3;"><!--LEFT TACK-->
+<!ENTITY LeftTeeArrow "&#x21A4;"><!--LEFTWARDS ARROW FROM BAR-->
+<!ENTITY LeftTeeVector "&#x295A;"><!--LEFTWARDS HARPOON WITH BARB UP FROM BAR-->
+<!ENTITY leftthreetimes "&#x22CB;"><!--LEFT SEMIDIRECT PRODUCT-->
+<!ENTITY LeftTriangle "&#x22B2;"><!--NORMAL SUBGROUP OF-->
+<!ENTITY LeftTriangleBar "&#x29CF;"><!--LEFT TRIANGLE BESIDE VERTICAL BAR-->
+<!ENTITY LeftTriangleEqual "&#x22B4;"><!--NORMAL SUBGROUP OF OR EQUAL TO-->
+<!ENTITY LeftUpDownVector "&#x2951;"><!--UP BARB LEFT DOWN BARB LEFT HARPOON-->
+<!ENTITY LeftUpTeeVector "&#x2960;"><!--UPWARDS HARPOON WITH BARB LEFT FROM BAR-->
+<!ENTITY LeftUpVector "&#x21BF;"><!--UPWARDS HARPOON WITH BARB LEFTWARDS-->
+<!ENTITY LeftUpVectorBar "&#x2958;"><!--UPWARDS HARPOON WITH BARB LEFT TO BAR-->
+<!ENTITY LeftVector "&#x21BC;"><!--LEFTWARDS HARPOON WITH BARB UPWARDS-->
+<!ENTITY LeftVectorBar "&#x2952;"><!--LEFTWARDS HARPOON WITH BARB UP TO BAR-->
+<!ENTITY lEg "&#x2A8B;"><!--LESS-THAN ABOVE DOUBLE-LINE EQUAL ABOVE GREATER-THAN-->
+<!ENTITY leg "&#x22DA;"><!--LESS-THAN EQUAL TO OR GREATER-THAN-->
+<!ENTITY leq "&#x2264;"><!--LESS-THAN OR EQUAL TO-->
+<!ENTITY leqq "&#x2266;"><!--LESS-THAN OVER EQUAL TO-->
+<!ENTITY leqslant "&#x2A7D;"><!--LESS-THAN OR SLANTED EQUAL TO-->
+<!ENTITY les "&#x2A7D;"><!--LESS-THAN OR SLANTED EQUAL TO-->
+<!ENTITY lescc "&#x2AA8;"><!--LESS-THAN CLOSED BY CURVE ABOVE SLANTED EQUAL-->
+<!ENTITY lesdot "&#x2A7F;"><!--LESS-THAN OR SLANTED EQUAL TO WITH DOT INSIDE-->
+<!ENTITY lesdoto "&#x2A81;"><!--LESS-THAN OR SLANTED EQUAL TO WITH DOT ABOVE-->
+<!ENTITY lesdotor "&#x2A83;"><!--LESS-THAN OR SLANTED EQUAL TO WITH DOT ABOVE RIGHT-->
+<!ENTITY lesg "&#x22DA;&#xFE00;"><!--LESS-THAN slanted EQUAL TO OR GREATER-THAN-->
+<!ENTITY lesges "&#x2A93;"><!--LESS-THAN ABOVE SLANTED EQUAL ABOVE GREATER-THAN ABOVE SLANTED EQUAL-->
+<!ENTITY lessapprox "&#x2A85;"><!--LESS-THAN OR APPROXIMATE-->
+<!ENTITY lessdot "&#x22D6;"><!--LESS-THAN WITH DOT-->
+<!ENTITY lesseqgtr "&#x22DA;"><!--LESS-THAN EQUAL TO OR GREATER-THAN-->
+<!ENTITY lesseqqgtr "&#x2A8B;"><!--LESS-THAN ABOVE DOUBLE-LINE EQUAL ABOVE GREATER-THAN-->
+<!ENTITY LessEqualGreater "&#x22DA;"><!--LESS-THAN EQUAL TO OR GREATER-THAN-->
+<!ENTITY LessFullEqual "&#x2266;"><!--LESS-THAN OVER EQUAL TO-->
+<!ENTITY LessGreater "&#x2276;"><!--LESS-THAN OR GREATER-THAN-->
+<!ENTITY lessgtr "&#x2276;"><!--LESS-THAN OR GREATER-THAN-->
+<!ENTITY LessLess "&#x2AA1;"><!--DOUBLE NESTED LESS-THAN-->
+<!ENTITY lesssim "&#x2272;"><!--LESS-THAN OR EQUIVALENT TO-->
+<!ENTITY LessSlantEqual "&#x2A7D;"><!--LESS-THAN OR SLANTED EQUAL TO-->
+<!ENTITY LessTilde "&#x2272;"><!--LESS-THAN OR EQUIVALENT TO-->
+<!ENTITY lfisht "&#x297C;"><!--LEFT FISH TAIL-->
+<!ENTITY lfloor "&#x230A;"><!--LEFT FLOOR-->
+<!ENTITY Lfr "&#x1D50F;"><!--MATHEMATICAL FRAKTUR CAPITAL L-->
+<!ENTITY lfr "&#x1D529;"><!--MATHEMATICAL FRAKTUR SMALL L-->
+<!ENTITY lg "&#x2276;"><!--LESS-THAN OR GREATER-THAN-->
+<!ENTITY lgE "&#x2A91;"><!--LESS-THAN ABOVE GREATER-THAN ABOVE DOUBLE-LINE EQUAL-->
+<!ENTITY lHar "&#x2962;"><!--LEFTWARDS HARPOON WITH BARB UP ABOVE LEFTWARDS HARPOON WITH BARB DOWN-->
+<!ENTITY lhard "&#x21BD;"><!--LEFTWARDS HARPOON WITH BARB DOWNWARDS-->
+<!ENTITY lharu "&#x21BC;"><!--LEFTWARDS HARPOON WITH BARB UPWARDS-->
+<!ENTITY lharul "&#x296A;"><!--LEFTWARDS HARPOON WITH BARB UP ABOVE LONG DASH-->
+<!ENTITY lhblk "&#x2584;"><!--LOWER HALF BLOCK-->
+<!ENTITY LJcy "&#x409;"><!--CYRILLIC CAPITAL LETTER LJE-->
+<!ENTITY ljcy "&#x459;"><!--CYRILLIC SMALL LETTER LJE-->
+<!ENTITY Ll "&#x22D8;"><!--VERY MUCH LESS-THAN-->
+<!ENTITY ll "&#x226A;"><!--MUCH LESS-THAN-->
+<!ENTITY llarr "&#x21C7;"><!--LEFTWARDS PAIRED ARROWS-->
+<!ENTITY llcorner "&#x231E;"><!--BOTTOM LEFT CORNER-->
+<!ENTITY Lleftarrow "&#x21DA;"><!--LEFTWARDS TRIPLE ARROW-->
+<!ENTITY llhard "&#x296B;"><!--LEFTWARDS HARPOON WITH BARB DOWN BELOW LONG DASH-->
+<!ENTITY lltri "&#x25FA;"><!--LOWER LEFT TRIANGLE-->
+<!ENTITY Lmidot "&#x13F;"><!--LATIN CAPITAL LETTER L WITH MIDDLE DOT-->
+<!ENTITY lmidot "&#x140;"><!--LATIN SMALL LETTER L WITH MIDDLE DOT-->
+<!ENTITY lmoust "&#x23B0;"><!--UPPER LEFT OR LOWER RIGHT CURLY BRACKET SECTION-->
+<!ENTITY lmoustache "&#x23B0;"><!--UPPER LEFT OR LOWER RIGHT CURLY BRACKET SECTION-->
+<!ENTITY lnap "&#x2A89;"><!--LESS-THAN AND NOT APPROXIMATE-->
+<!ENTITY lnapprox "&#x2A89;"><!--LESS-THAN AND NOT APPROXIMATE-->
+<!ENTITY lnE "&#x2268;"><!--LESS-THAN BUT NOT EQUAL TO-->
+<!ENTITY lne "&#x2A87;"><!--LESS-THAN AND SINGLE-LINE NOT EQUAL TO-->
+<!ENTITY lneq "&#x2A87;"><!--LESS-THAN AND SINGLE-LINE NOT EQUAL TO-->
+<!ENTITY lneqq "&#x2268;"><!--LESS-THAN BUT NOT EQUAL TO-->
+<!ENTITY lnsim "&#x22E6;"><!--LESS-THAN BUT NOT EQUIVALENT TO-->
+<!ENTITY loang "&#x27EC;"><!--MATHEMATICAL LEFT WHITE TORTOISE SHELL BRACKET-->
+<!ENTITY loarr "&#x21FD;"><!--LEFTWARDS OPEN-HEADED ARROW-->
+<!ENTITY lobrk "&#x27E6;"><!--MATHEMATICAL LEFT WHITE SQUARE BRACKET-->
+<!ENTITY LongLeftArrow "&#x27F5;"><!--LONG LEFTWARDS ARROW-->
+<!ENTITY Longleftarrow "&#x27F8;"><!--LONG LEFTWARDS DOUBLE ARROW-->
+<!ENTITY longleftarrow "&#x27F5;"><!--LONG LEFTWARDS ARROW-->
+<!ENTITY LongLeftRightArrow "&#x27F7;"><!--LONG LEFT RIGHT ARROW-->
+<!ENTITY Longleftrightarrow "&#x27FA;"><!--LONG LEFT RIGHT DOUBLE ARROW-->
+<!ENTITY longleftrightarrow "&#x27F7;"><!--LONG LEFT RIGHT ARROW-->
+<!ENTITY longmapsto "&#x27FC;"><!--LONG RIGHTWARDS ARROW FROM BAR-->
+<!ENTITY LongRightArrow "&#x27F6;"><!--LONG RIGHTWARDS ARROW-->
+<!ENTITY Longrightarrow "&#x27F9;"><!--LONG RIGHTWARDS DOUBLE ARROW-->
+<!ENTITY longrightarrow "&#x27F6;"><!--LONG RIGHTWARDS ARROW-->
+<!ENTITY looparrowleft "&#x21AB;"><!--LEFTWARDS ARROW WITH LOOP-->
+<!ENTITY looparrowright "&#x21AC;"><!--RIGHTWARDS ARROW WITH LOOP-->
+<!ENTITY lopar "&#x2985;"><!--LEFT WHITE PARENTHESIS-->
+<!ENTITY Lopf "&#x1D543;"><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL L-->
+<!ENTITY lopf "&#x1D55D;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL L-->
+<!ENTITY loplus "&#x2A2D;"><!--PLUS SIGN IN LEFT HALF CIRCLE-->
+<!ENTITY lotimes "&#x2A34;"><!--MULTIPLICATION SIGN IN LEFT HALF CIRCLE-->
+<!ENTITY lowast "&#x2217;"><!--ASTERISK OPERATOR-->
+<!ENTITY lowbar "&#x5F;"><!--LOW LINE-->
+<!ENTITY LowerLeftArrow "&#x2199;"><!--SOUTH WEST ARROW-->
+<!ENTITY LowerRightArrow "&#x2198;"><!--SOUTH EAST ARROW-->
+<!ENTITY loz "&#x25CA;"><!--LOZENGE-->
+<!ENTITY lozenge "&#x25CA;"><!--LOZENGE-->
+<!ENTITY lozf "&#x29EB;"><!--BLACK LOZENGE-->
+<!ENTITY lpar "&#x28;"><!--LEFT PARENTHESIS-->
+<!ENTITY lparlt "&#x2993;"><!--LEFT ARC LESS-THAN BRACKET-->
+<!ENTITY lrarr "&#x21C6;"><!--LEFTWARDS ARROW OVER RIGHTWARDS ARROW-->
+<!ENTITY lrcorner "&#x231F;"><!--BOTTOM RIGHT CORNER-->
+<!ENTITY lrhar "&#x21CB;"><!--LEFTWARDS HARPOON OVER RIGHTWARDS HARPOON-->
+<!ENTITY lrhard "&#x296D;"><!--RIGHTWARDS HARPOON WITH BARB DOWN BELOW LONG DASH-->
+<!ENTITY lrm "&#x200E;"><!--LEFT-TO-RIGHT MARK-->
+<!ENTITY lrtri "&#x22BF;"><!--RIGHT TRIANGLE-->
+<!ENTITY lsaquo "&#x2039;"><!--SINGLE LEFT-POINTING ANGLE QUOTATION MARK-->
+<!ENTITY Lscr "&#x2112;"><!--SCRIPT CAPITAL L-->
+<!ENTITY lscr "&#x1D4C1;"><!--MATHEMATICAL SCRIPT SMALL L-->
+<!ENTITY Lsh "&#x21B0;"><!--UPWARDS ARROW WITH TIP LEFTWARDS-->
+<!ENTITY lsh "&#x21B0;"><!--UPWARDS ARROW WITH TIP LEFTWARDS-->
+<!ENTITY lsim "&#x2272;"><!--LESS-THAN OR EQUIVALENT TO-->
+<!ENTITY lsime "&#x2A8D;"><!--LESS-THAN ABOVE SIMILAR OR EQUAL-->
+<!ENTITY lsimg "&#x2A8F;"><!--LESS-THAN ABOVE SIMILAR ABOVE GREATER-THAN-->
+<!ENTITY lsqb "&#x5B;"><!--LEFT SQUARE BRACKET-->
+<!ENTITY lsquo "&#x2018;"><!--LEFT SINGLE QUOTATION MARK-->
+<!ENTITY lsquor "&#x201A;"><!--SINGLE LOW-9 QUOTATION MARK-->
+<!ENTITY Lstrok "&#x141;"><!--LATIN CAPITAL LETTER L WITH STROKE-->
+<!ENTITY lstrok "&#x142;"><!--LATIN SMALL LETTER L WITH STROKE-->
+<!ENTITY LT "&#38;#60;"><!--LESS-THAN SIGN-->
+<!ENTITY Lt "&#x226A;"><!--MUCH LESS-THAN-->
+<!ENTITY lt "&#38;#60;"><!--LESS-THAN SIGN-->
+<!ENTITY ltcc "&#x2AA6;"><!--LESS-THAN CLOSED BY CURVE-->
+<!ENTITY ltcir "&#x2A79;"><!--LESS-THAN WITH CIRCLE INSIDE-->
+<!ENTITY ltdot "&#x22D6;"><!--LESS-THAN WITH DOT-->
+<!ENTITY lthree "&#x22CB;"><!--LEFT SEMIDIRECT PRODUCT-->
+<!ENTITY ltimes "&#x22C9;"><!--LEFT NORMAL FACTOR SEMIDIRECT PRODUCT-->
+<!ENTITY ltlarr "&#x2976;"><!--LESS-THAN ABOVE LEFTWARDS ARROW-->
+<!ENTITY ltquest "&#x2A7B;"><!--LESS-THAN WITH QUESTION MARK ABOVE-->
+<!ENTITY ltri "&#x25C3;"><!--WHITE LEFT-POINTING SMALL TRIANGLE-->
+<!ENTITY ltrie "&#x22B4;"><!--NORMAL SUBGROUP OF OR EQUAL TO-->
+<!ENTITY ltrif "&#x25C2;"><!--BLACK LEFT-POINTING SMALL TRIANGLE-->
+<!ENTITY ltrPar "&#x2996;"><!--DOUBLE RIGHT ARC LESS-THAN BRACKET-->
+<!ENTITY lurdshar "&#x294A;"><!--LEFT BARB UP RIGHT BARB DOWN HARPOON-->
+<!ENTITY luruhar "&#x2966;"><!--LEFTWARDS HARPOON WITH BARB UP ABOVE RIGHTWARDS HARPOON WITH BARB UP-->
+<!ENTITY lvertneqq "&#x2268;&#xFE00;"><!--LESS-THAN BUT NOT EQUAL TO - with vertical stroke-->
+<!ENTITY lvnE "&#x2268;&#xFE00;"><!--LESS-THAN BUT NOT EQUAL TO - with vertical stroke-->
+<!ENTITY macr "&#xAF;"><!--MACRON-->
+<!ENTITY male "&#x2642;"><!--MALE SIGN-->
+<!ENTITY malt "&#x2720;"><!--MALTESE CROSS-->
+<!ENTITY maltese "&#x2720;"><!--MALTESE CROSS-->
+<!ENTITY Map "&#x2905;"><!--RIGHTWARDS TWO-HEADED ARROW FROM BAR-->
+<!ENTITY map "&#x21A6;"><!--RIGHTWARDS ARROW FROM BAR-->
+<!ENTITY mapsto "&#x21A6;"><!--RIGHTWARDS ARROW FROM BAR-->
+<!ENTITY mapstodown "&#x21A7;"><!--DOWNWARDS ARROW FROM BAR-->
+<!ENTITY mapstoleft "&#x21A4;"><!--LEFTWARDS ARROW FROM BAR-->
+<!ENTITY mapstoup "&#x21A5;"><!--UPWARDS ARROW FROM BAR-->
+<!ENTITY marker "&#x25AE;"><!--BLACK VERTICAL RECTANGLE-->
+<!ENTITY mcomma "&#x2A29;"><!--MINUS SIGN WITH COMMA ABOVE-->
+<!ENTITY Mcy "&#x41C;"><!--CYRILLIC CAPITAL LETTER EM-->
+<!ENTITY mcy "&#x43C;"><!--CYRILLIC SMALL LETTER EM-->
+<!ENTITY mdash "&#x2014;"><!--EM DASH-->
+<!ENTITY mDDot "&#x223A;"><!--GEOMETRIC PROPORTION-->
+<!ENTITY measuredangle "&#x2221;"><!--MEASURED ANGLE-->
+<!ENTITY MediumSpace "&#x205F;"><!--MEDIUM MATHEMATICAL SPACE-->
+<!ENTITY Mellintrf "&#x2133;"><!--SCRIPT CAPITAL M-->
+<!ENTITY Mfr "&#x1D510;"><!--MATHEMATICAL FRAKTUR CAPITAL M-->
+<!ENTITY mfr "&#x1D52A;"><!--MATHEMATICAL FRAKTUR SMALL M-->
+<!ENTITY mho "&#x2127;"><!--INVERTED OHM SIGN-->
+<!ENTITY micro "&#xB5;"><!--MICRO SIGN-->
+<!ENTITY mid "&#x2223;"><!--DIVIDES-->
+<!ENTITY midast "&#x2A;"><!--ASTERISK-->
+<!ENTITY midcir "&#x2AF0;"><!--VERTICAL LINE WITH CIRCLE BELOW-->
+<!ENTITY middot "&#xB7;"><!--MIDDLE DOT-->
+<!ENTITY minus "&#x2212;"><!--MINUS SIGN-->
+<!ENTITY minusb "&#x229F;"><!--SQUARED MINUS-->
+<!ENTITY minusd "&#x2238;"><!--DOT MINUS-->
+<!ENTITY minusdu "&#x2A2A;"><!--MINUS SIGN WITH DOT BELOW-->
+<!ENTITY MinusPlus "&#x2213;"><!--MINUS-OR-PLUS SIGN-->
+<!ENTITY mlcp "&#x2ADB;"><!--TRANSVERSAL INTERSECTION-->
+<!ENTITY mldr "&#x2026;"><!--HORIZONTAL ELLIPSIS-->
+<!ENTITY mnplus "&#x2213;"><!--MINUS-OR-PLUS SIGN-->
+<!ENTITY models "&#x22A7;"><!--MODELS-->
+<!ENTITY Mopf "&#x1D544;"><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL M-->
+<!ENTITY mopf "&#x1D55E;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL M-->
+<!ENTITY mp "&#x2213;"><!--MINUS-OR-PLUS SIGN-->
+<!ENTITY Mscr "&#x2133;"><!--SCRIPT CAPITAL M-->
+<!ENTITY mscr "&#x1D4C2;"><!--MATHEMATICAL SCRIPT SMALL M-->
+<!ENTITY mstpos "&#x223E;"><!--INVERTED LAZY S-->
+<!ENTITY Mu "&#x39C;"><!--GREEK CAPITAL LETTER MU-->
+<!ENTITY mu "&#x3BC;"><!--GREEK SMALL LETTER MU-->
+<!ENTITY multimap "&#x22B8;"><!--MULTIMAP-->
+<!ENTITY mumap "&#x22B8;"><!--MULTIMAP-->
+<!ENTITY nabla "&#x2207;"><!--NABLA-->
+<!ENTITY Nacute "&#x143;"><!--LATIN CAPITAL LETTER N WITH ACUTE-->
+<!ENTITY nacute "&#x144;"><!--LATIN SMALL LETTER N WITH ACUTE-->
+<!ENTITY nang "&#x2220;&#x20D2;"><!--ANGLE with vertical line-->
+<!ENTITY nap "&#x2249;"><!--NOT ALMOST EQUAL TO-->
+<!ENTITY napE "&#x2A70;&#x338;"><!--APPROXIMATELY EQUAL OR EQUAL TO with slash-->
+<!ENTITY napid "&#x224B;&#x338;"><!--TRIPLE TILDE with slash-->
+<!ENTITY napos "&#x149;"><!--LATIN SMALL LETTER N PRECEDED BY APOSTROPHE-->
+<!ENTITY napprox "&#x2249;"><!--NOT ALMOST EQUAL TO-->
+<!ENTITY natur "&#x266E;"><!--MUSIC NATURAL SIGN-->
+<!ENTITY natural "&#x266E;"><!--MUSIC NATURAL SIGN-->
+<!ENTITY naturals "&#x2115;"><!--DOUBLE-STRUCK CAPITAL N-->
+<!ENTITY nbsp "&#xA0;"><!--NO-BREAK SPACE-->
+<!ENTITY nbump "&#x224E;&#x338;"><!--GEOMETRICALLY EQUIVALENT TO with slash-->
+<!ENTITY nbumpe "&#x224F;&#x338;"><!--DIFFERENCE BETWEEN with slash-->
+<!ENTITY ncap "&#x2A43;"><!--INTERSECTION WITH OVERBAR-->
+<!ENTITY Ncaron "&#x147;"><!--LATIN CAPITAL LETTER N WITH CARON-->
+<!ENTITY ncaron "&#x148;"><!--LATIN SMALL LETTER N WITH CARON-->
+<!ENTITY Ncedil "&#x145;"><!--LATIN CAPITAL LETTER N WITH CEDILLA-->
+<!ENTITY ncedil "&#x146;"><!--LATIN SMALL LETTER N WITH CEDILLA-->
+<!ENTITY ncong "&#x2247;"><!--NEITHER APPROXIMATELY NOR ACTUALLY EQUAL TO-->
+<!ENTITY ncongdot "&#x2A6D;&#x338;"><!--CONGRUENT WITH DOT ABOVE with slash-->
+<!ENTITY ncup "&#x2A42;"><!--UNION WITH OVERBAR-->
+<!ENTITY Ncy "&#x41D;"><!--CYRILLIC CAPITAL LETTER EN-->
+<!ENTITY ncy "&#x43D;"><!--CYRILLIC SMALL LETTER EN-->
+<!ENTITY ndash "&#x2013;"><!--EN DASH-->
+<!ENTITY ne "&#x2260;"><!--NOT EQUAL TO-->
+<!ENTITY nearhk "&#x2924;"><!--NORTH EAST ARROW WITH HOOK-->
+<!ENTITY neArr "&#x21D7;"><!--NORTH EAST DOUBLE ARROW-->
+<!ENTITY nearr "&#x2197;"><!--NORTH EAST ARROW-->
+<!ENTITY nearrow "&#x2197;"><!--NORTH EAST ARROW-->
+<!ENTITY nedot "&#x2250;&#x338;"><!--APPROACHES THE LIMIT with slash-->
+<!ENTITY NegativeMediumSpace "&#x200B;"><!--ZERO WIDTH SPACE-->
+<!ENTITY NegativeThickSpace "&#x200B;"><!--ZERO WIDTH SPACE-->
+<!ENTITY NegativeThinSpace "&#x200B;"><!--ZERO WIDTH SPACE-->
+<!ENTITY NegativeVeryThinSpace "&#x200B;"><!--ZERO WIDTH SPACE-->
+<!ENTITY nequiv "&#x2262;"><!--NOT IDENTICAL TO-->
+<!ENTITY nesear "&#x2928;"><!--NORTH EAST ARROW AND SOUTH EAST ARROW-->
+<!ENTITY nesim "&#x2242;&#x338;"><!--MINUS TILDE with slash-->
+<!ENTITY NestedGreaterGreater "&#x226B;"><!--MUCH GREATER-THAN-->
+<!ENTITY NestedLessLess "&#x226A;"><!--MUCH LESS-THAN-->
+<!ENTITY NewLine "&#xA;"><!--LINE FEED (LF)-->
+<!ENTITY nexist "&#x2204;"><!--THERE DOES NOT EXIST-->
+<!ENTITY nexists "&#x2204;"><!--THERE DOES NOT EXIST-->
+<!ENTITY Nfr "&#x1D511;"><!--MATHEMATICAL FRAKTUR CAPITAL N-->
+<!ENTITY nfr "&#x1D52B;"><!--MATHEMATICAL FRAKTUR SMALL N-->
+<!ENTITY ngE "&#x2267;&#x338;"><!--GREATER-THAN OVER EQUAL TO with slash-->
+<!ENTITY nge "&#x2271;"><!--NEITHER GREATER-THAN NOR EQUAL TO-->
+<!ENTITY ngeq "&#x2271;"><!--NEITHER GREATER-THAN NOR EQUAL TO-->
+<!ENTITY ngeqq "&#x2267;&#x338;"><!--GREATER-THAN OVER EQUAL TO with slash-->
+<!ENTITY ngeqslant "&#x2A7E;&#x338;"><!--GREATER-THAN OR SLANTED EQUAL TO with slash-->
+<!ENTITY nges "&#x2A7E;&#x338;"><!--GREATER-THAN OR SLANTED EQUAL TO with slash-->
+<!ENTITY nGg "&#x22D9;&#x338;"><!--VERY MUCH GREATER-THAN with slash-->
+<!ENTITY ngsim "&#x2275;"><!--NEITHER GREATER-THAN NOR EQUIVALENT TO-->
+<!ENTITY nGt "&#x226B;&#x20D2;"><!--MUCH GREATER THAN with vertical line-->
+<!ENTITY ngt "&#x226F;"><!--NOT GREATER-THAN-->
+<!ENTITY ngtr "&#x226F;"><!--NOT GREATER-THAN-->
+<!ENTITY nGtv "&#x226B;&#x338;"><!--MUCH GREATER THAN with slash-->
+<!ENTITY nhArr "&#x21CE;"><!--LEFT RIGHT DOUBLE ARROW WITH STROKE-->
+<!ENTITY nharr "&#x21AE;"><!--LEFT RIGHT ARROW WITH STROKE-->
+<!ENTITY nhpar "&#x2AF2;"><!--PARALLEL WITH HORIZONTAL STROKE-->
+<!ENTITY ni "&#x220B;"><!--CONTAINS AS MEMBER-->
+<!ENTITY nis "&#x22FC;"><!--SMALL CONTAINS WITH VERTICAL BAR AT END OF HORIZONTAL STROKE-->
+<!ENTITY nisd "&#x22FA;"><!--CONTAINS WITH LONG HORIZONTAL STROKE-->
+<!ENTITY niv "&#x220B;"><!--CONTAINS AS MEMBER-->
+<!ENTITY NJcy "&#x40A;"><!--CYRILLIC CAPITAL LETTER NJE-->
+<!ENTITY njcy "&#x45A;"><!--CYRILLIC SMALL LETTER NJE-->
+<!ENTITY nlArr "&#x21CD;"><!--LEFTWARDS DOUBLE ARROW WITH STROKE-->
+<!ENTITY nlarr "&#x219A;"><!--LEFTWARDS ARROW WITH STROKE-->
+<!ENTITY nldr "&#x2025;"><!--TWO DOT LEADER-->
+<!ENTITY nlE "&#x2266;&#x338;"><!--LESS-THAN OVER EQUAL TO with slash-->
+<!ENTITY nle "&#x2270;"><!--NEITHER LESS-THAN NOR EQUAL TO-->
+<!ENTITY nLeftarrow "&#x21CD;"><!--LEFTWARDS DOUBLE ARROW WITH STROKE-->
+<!ENTITY nleftarrow "&#x219A;"><!--LEFTWARDS ARROW WITH STROKE-->
+<!ENTITY nLeftrightarrow "&#x21CE;"><!--LEFT RIGHT DOUBLE ARROW WITH STROKE-->
+<!ENTITY nleftrightarrow "&#x21AE;"><!--LEFT RIGHT ARROW WITH STROKE-->
+<!ENTITY nleq "&#x2270;"><!--NEITHER LESS-THAN NOR EQUAL TO-->
+<!ENTITY nleqq "&#x2266;&#x338;"><!--LESS-THAN OVER EQUAL TO with slash-->
+<!ENTITY nleqslant "&#x2A7D;&#x338;"><!--LESS-THAN OR SLANTED EQUAL TO with slash-->
+<!ENTITY nles "&#x2A7D;&#x338;"><!--LESS-THAN OR SLANTED EQUAL TO with slash-->
+<!ENTITY nless "&#x226E;"><!--NOT LESS-THAN-->
+<!ENTITY nLl "&#x22D8;&#x338;"><!--VERY MUCH LESS-THAN with slash-->
+<!ENTITY nlsim "&#x2274;"><!--NEITHER LESS-THAN NOR EQUIVALENT TO-->
+<!ENTITY nLt "&#x226A;&#x20D2;"><!--MUCH LESS THAN with vertical line-->
+<!ENTITY nlt "&#x226E;"><!--NOT LESS-THAN-->
+<!ENTITY nltri "&#x22EA;"><!--NOT NORMAL SUBGROUP OF-->
+<!ENTITY nltrie "&#x22EC;"><!--NOT NORMAL SUBGROUP OF OR EQUAL TO-->
+<!ENTITY nLtv "&#x226A;&#x338;"><!--MUCH LESS THAN with slash-->
+<!ENTITY nmid "&#x2224;"><!--DOES NOT DIVIDE-->
+<!ENTITY NoBreak "&#x2060;"><!--WORD JOINER-->
+<!ENTITY NonBreakingSpace "&#xA0;"><!--NO-BREAK SPACE-->
+<!ENTITY Nopf "&#x2115;"><!--DOUBLE-STRUCK CAPITAL N-->
+<!ENTITY nopf "&#x1D55F;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL N-->
+<!ENTITY Not "&#x2AEC;"><!--DOUBLE STROKE NOT SIGN-->
+<!ENTITY not "&#xAC;"><!--NOT SIGN-->
+<!ENTITY NotCongruent "&#x2262;"><!--NOT IDENTICAL TO-->
+<!ENTITY NotCupCap "&#x226D;"><!--NOT EQUIVALENT TO-->
+<!ENTITY NotDoubleVerticalBar "&#x2226;"><!--NOT PARALLEL TO-->
+<!ENTITY NotElement "&#x2209;"><!--NOT AN ELEMENT OF-->
+<!ENTITY NotEqual "&#x2260;"><!--NOT EQUAL TO-->
+<!ENTITY NotEqualTilde "&#x2242;&#x338;"><!--MINUS TILDE with slash-->
+<!ENTITY NotExists "&#x2204;"><!--THERE DOES NOT EXIST-->
+<!ENTITY NotGreater "&#x226F;"><!--NOT GREATER-THAN-->
+<!ENTITY NotGreaterEqual "&#x2271;"><!--NEITHER GREATER-THAN NOR EQUAL TO-->
+<!ENTITY NotGreaterFullEqual "&#x2267;&#x338;"><!--GREATER-THAN OVER EQUAL TO with slash-->
+<!ENTITY NotGreaterGreater "&#x226B;&#x338;"><!--MUCH GREATER THAN with slash-->
+<!ENTITY NotGreaterLess "&#x2279;"><!--NEITHER GREATER-THAN NOR LESS-THAN-->
+<!ENTITY NotGreaterSlantEqual "&#x2A7E;&#x338;"><!--GREATER-THAN OR SLANTED EQUAL TO with slash-->
+<!ENTITY NotGreaterTilde "&#x2275;"><!--NEITHER GREATER-THAN NOR EQUIVALENT TO-->
+<!ENTITY NotHumpDownHump "&#x224E;&#x338;"><!--GEOMETRICALLY EQUIVALENT TO with slash-->
+<!ENTITY NotHumpEqual "&#x224F;&#x338;"><!--DIFFERENCE BETWEEN with slash-->
+<!ENTITY notin "&#x2209;"><!--NOT AN ELEMENT OF-->
+<!ENTITY notindot "&#x22F5;&#x338;"><!--ELEMENT OF WITH DOT ABOVE with slash-->
+<!ENTITY notinE "&#x22F9;&#x338;"><!--ELEMENT OF WITH TWO HORIZONTAL STROKES with slash-->
+<!ENTITY notinva "&#x2209;"><!--NOT AN ELEMENT OF-->
+<!ENTITY notinvb "&#x22F7;"><!--SMALL ELEMENT OF WITH OVERBAR-->
+<!ENTITY notinvc "&#x22F6;"><!--ELEMENT OF WITH OVERBAR-->
+<!ENTITY NotLeftTriangle "&#x22EA;"><!--NOT NORMAL SUBGROUP OF-->
+<!ENTITY NotLeftTriangleBar "&#x29CF;&#x338;"><!--LEFT TRIANGLE BESIDE VERTICAL BAR with slash-->
+<!ENTITY NotLeftTriangleEqual "&#x22EC;"><!--NOT NORMAL SUBGROUP OF OR EQUAL TO-->
+<!ENTITY NotLess "&#x226E;"><!--NOT LESS-THAN-->
+<!ENTITY NotLessEqual "&#x2270;"><!--NEITHER LESS-THAN NOR EQUAL TO-->
+<!ENTITY NotLessGreater "&#x2278;"><!--NEITHER LESS-THAN NOR GREATER-THAN-->
+<!ENTITY NotLessLess "&#x226A;&#x338;"><!--MUCH LESS THAN with slash-->
+<!ENTITY NotLessSlantEqual "&#x2A7D;&#x338;"><!--LESS-THAN OR SLANTED EQUAL TO with slash-->
+<!ENTITY NotLessTilde "&#x2274;"><!--NEITHER LESS-THAN NOR EQUIVALENT TO-->
+<!ENTITY NotNestedGreaterGreater "&#x2AA2;&#x338;"><!--DOUBLE NESTED GREATER-THAN with slash-->
+<!ENTITY NotNestedLessLess "&#x2AA1;&#x338;"><!--DOUBLE NESTED LESS-THAN with slash-->
+<!ENTITY notni "&#x220C;"><!--DOES NOT CONTAIN AS MEMBER-->
+<!ENTITY notniva "&#x220C;"><!--DOES NOT CONTAIN AS MEMBER-->
+<!ENTITY notnivb "&#x22FE;"><!--SMALL CONTAINS WITH OVERBAR-->
+<!ENTITY notnivc "&#x22FD;"><!--CONTAINS WITH OVERBAR-->
+<!ENTITY NotPrecedes "&#x2280;"><!--DOES NOT PRECEDE-->
+<!ENTITY NotPrecedesEqual "&#x2AAF;&#x338;"><!--PRECEDES ABOVE SINGLE-LINE EQUALS SIGN with slash-->
+<!ENTITY NotPrecedesSlantEqual "&#x22E0;"><!--DOES NOT PRECEDE OR EQUAL-->
+<!ENTITY NotReverseElement "&#x220C;"><!--DOES NOT CONTAIN AS MEMBER-->
+<!ENTITY NotRightTriangle "&#x22EB;"><!--DOES NOT CONTAIN AS NORMAL SUBGROUP-->
+<!ENTITY NotRightTriangleBar "&#x29D0;&#x338;"><!--VERTICAL BAR BESIDE RIGHT TRIANGLE with slash-->
+<!ENTITY NotRightTriangleEqual "&#x22ED;"><!--DOES NOT CONTAIN AS NORMAL SUBGROUP OR EQUAL-->
+<!ENTITY NotSquareSubset "&#x228F;&#x338;"><!--SQUARE IMAGE OF with slash-->
+<!ENTITY NotSquareSubsetEqual "&#x22E2;"><!--NOT SQUARE IMAGE OF OR EQUAL TO-->
+<!ENTITY NotSquareSuperset "&#x2290;&#x338;"><!--SQUARE ORIGINAL OF with slash-->
+<!ENTITY NotSquareSupersetEqual "&#x22E3;"><!--NOT SQUARE ORIGINAL OF OR EQUAL TO-->
+<!ENTITY NotSubset "&#x2282;&#x20D2;"><!--SUBSET OF with vertical line-->
+<!ENTITY NotSubsetEqual "&#x2288;"><!--NEITHER A SUBSET OF NOR EQUAL TO-->
+<!ENTITY NotSucceeds "&#x2281;"><!--DOES NOT SUCCEED-->
+<!ENTITY NotSucceedsEqual "&#x2AB0;&#x338;"><!--SUCCEEDS ABOVE SINGLE-LINE EQUALS SIGN with slash-->
+<!ENTITY NotSucceedsSlantEqual "&#x22E1;"><!--DOES NOT SUCCEED OR EQUAL-->
+<!ENTITY NotSucceedsTilde "&#x227F;&#x338;"><!--SUCCEEDS OR EQUIVALENT TO with slash-->
+<!ENTITY NotSuperset "&#x2283;&#x20D2;"><!--SUPERSET OF with vertical line-->
+<!ENTITY NotSupersetEqual "&#x2289;"><!--NEITHER A SUPERSET OF NOR EQUAL TO-->
+<!ENTITY NotTilde "&#x2241;"><!--NOT TILDE-->
+<!ENTITY NotTildeEqual "&#x2244;"><!--NOT ASYMPTOTICALLY EQUAL TO-->
+<!ENTITY NotTildeFullEqual "&#x2247;"><!--NEITHER APPROXIMATELY NOR ACTUALLY EQUAL TO-->
+<!ENTITY NotTildeTilde "&#x2249;"><!--NOT ALMOST EQUAL TO-->
+<!ENTITY NotVerticalBar "&#x2224;"><!--DOES NOT DIVIDE-->
+<!ENTITY npar "&#x2226;"><!--NOT PARALLEL TO-->
+<!ENTITY nparallel "&#x2226;"><!--NOT PARALLEL TO-->
+<!ENTITY nparsl "&#x2AFD;&#x20E5;"><!--DOUBLE SOLIDUS OPERATOR with reverse slash-->
+<!ENTITY npart "&#x2202;&#x338;"><!--PARTIAL DIFFERENTIAL with slash-->
+<!ENTITY npolint "&#x2A14;"><!--LINE INTEGRATION NOT INCLUDING THE POLE-->
+<!ENTITY npr "&#x2280;"><!--DOES NOT PRECEDE-->
+<!ENTITY nprcue "&#x22E0;"><!--DOES NOT PRECEDE OR EQUAL-->
+<!ENTITY npre "&#x2AAF;&#x338;"><!--PRECEDES ABOVE SINGLE-LINE EQUALS SIGN with slash-->
+<!ENTITY nprec "&#x2280;"><!--DOES NOT PRECEDE-->
+<!ENTITY npreceq "&#x2AAF;&#x338;"><!--PRECEDES ABOVE SINGLE-LINE EQUALS SIGN with slash-->
+<!ENTITY nrArr "&#x21CF;"><!--RIGHTWARDS DOUBLE ARROW WITH STROKE-->
+<!ENTITY nrarr "&#x219B;"><!--RIGHTWARDS ARROW WITH STROKE-->
+<!ENTITY nrarrc "&#x2933;&#x338;"><!--WAVE ARROW POINTING DIRECTLY RIGHT with slash-->
+<!ENTITY nrarrw "&#x219D;&#x338;"><!--RIGHTWARDS WAVE ARROW with slash-->
+<!ENTITY nRightarrow "&#x21CF;"><!--RIGHTWARDS DOUBLE ARROW WITH STROKE-->
+<!ENTITY nrightarrow "&#x219B;"><!--RIGHTWARDS ARROW WITH STROKE-->
+<!ENTITY nrtri "&#x22EB;"><!--DOES NOT CONTAIN AS NORMAL SUBGROUP-->
+<!ENTITY nrtrie "&#x22ED;"><!--DOES NOT CONTAIN AS NORMAL SUBGROUP OR EQUAL-->
+<!ENTITY nsc "&#x2281;"><!--DOES NOT SUCCEED-->
+<!ENTITY nsccue "&#x22E1;"><!--DOES NOT SUCCEED OR EQUAL-->
+<!ENTITY nsce "&#x2AB0;&#x338;"><!--SUCCEEDS ABOVE SINGLE-LINE EQUALS SIGN with slash-->
+<!ENTITY Nscr "&#x1D4A9;"><!--MATHEMATICAL SCRIPT CAPITAL N-->
+<!ENTITY nscr "&#x1D4C3;"><!--MATHEMATICAL SCRIPT SMALL N-->
+<!ENTITY nshortmid "&#x2224;"><!--DOES NOT DIVIDE-->
+<!ENTITY nshortparallel "&#x2226;"><!--NOT PARALLEL TO-->
+<!ENTITY nsim "&#x2241;"><!--NOT TILDE-->
+<!ENTITY nsime "&#x2244;"><!--NOT ASYMPTOTICALLY EQUAL TO-->
+<!ENTITY nsimeq "&#x2244;"><!--NOT ASYMPTOTICALLY EQUAL TO-->
+<!ENTITY nsmid "&#x2224;"><!--DOES NOT DIVIDE-->
+<!ENTITY nspar "&#x2226;"><!--NOT PARALLEL TO-->
+<!ENTITY nsqsube "&#x22E2;"><!--NOT SQUARE IMAGE OF OR EQUAL TO-->
+<!ENTITY nsqsupe "&#x22E3;"><!--NOT SQUARE ORIGINAL OF OR EQUAL TO-->
+<!ENTITY nsub "&#x2284;"><!--NOT A SUBSET OF-->
+<!ENTITY nsubE "&#x2AC5;&#x338;"><!--SUBSET OF ABOVE EQUALS SIGN with slash-->
+<!ENTITY nsube "&#x2288;"><!--NEITHER A SUBSET OF NOR EQUAL TO-->
+<!ENTITY nsubset "&#x2282;&#x20D2;"><!--SUBSET OF with vertical line-->
+<!ENTITY nsubseteq "&#x2288;"><!--NEITHER A SUBSET OF NOR EQUAL TO-->
+<!ENTITY nsubseteqq "&#x2AC5;&#x338;"><!--SUBSET OF ABOVE EQUALS SIGN with slash-->
+<!ENTITY nsucc "&#x2281;"><!--DOES NOT SUCCEED-->
+<!ENTITY nsucceq "&#x2AB0;&#x338;"><!--SUCCEEDS ABOVE SINGLE-LINE EQUALS SIGN with slash-->
+<!ENTITY nsup "&#x2285;"><!--NOT A SUPERSET OF-->
+<!ENTITY nsupE "&#x2AC6;&#x338;"><!--SUPERSET OF ABOVE EQUALS SIGN with slash-->
+<!ENTITY nsupe "&#x2289;"><!--NEITHER A SUPERSET OF NOR EQUAL TO-->
+<!ENTITY nsupset "&#x2283;&#x20D2;"><!--SUPERSET OF with vertical line-->
+<!ENTITY nsupseteq "&#x2289;"><!--NEITHER A SUPERSET OF NOR EQUAL TO-->
+<!ENTITY nsupseteqq "&#x2AC6;&#x338;"><!--SUPERSET OF ABOVE EQUALS SIGN with slash-->
+<!ENTITY ntgl "&#x2279;"><!--NEITHER GREATER-THAN NOR LESS-THAN-->
+<!ENTITY Ntilde "&#xD1;"><!--LATIN CAPITAL LETTER N WITH TILDE-->
+<!ENTITY ntilde "&#xF1;"><!--LATIN SMALL LETTER N WITH TILDE-->
+<!ENTITY ntlg "&#x2278;"><!--NEITHER LESS-THAN NOR GREATER-THAN-->
+<!ENTITY ntriangleleft "&#x22EA;"><!--NOT NORMAL SUBGROUP OF-->
+<!ENTITY ntrianglelefteq "&#x22EC;"><!--NOT NORMAL SUBGROUP OF OR EQUAL TO-->
+<!ENTITY ntriangleright "&#x22EB;"><!--DOES NOT CONTAIN AS NORMAL SUBGROUP-->
+<!ENTITY ntrianglerighteq "&#x22ED;"><!--DOES NOT CONTAIN AS NORMAL SUBGROUP OR EQUAL-->
+<!ENTITY Nu "&#x39D;"><!--GREEK CAPITAL LETTER NU-->
+<!ENTITY nu "&#x3BD;"><!--GREEK SMALL LETTER NU-->
+<!ENTITY num "&#x23;"><!--NUMBER SIGN-->
+<!ENTITY numero "&#x2116;"><!--NUMERO SIGN-->
+<!ENTITY numsp "&#x2007;"><!--FIGURE SPACE-->
+<!ENTITY nvap "&#x224D;&#x20D2;"><!--EQUIVALENT TO with vertical line-->
+<!ENTITY nVDash "&#x22AF;"><!--NEGATED DOUBLE VERTICAL BAR DOUBLE RIGHT TURNSTILE-->
+<!ENTITY nVdash "&#x22AE;"><!--DOES NOT FORCE-->
+<!ENTITY nvDash "&#x22AD;"><!--NOT TRUE-->
+<!ENTITY nvdash "&#x22AC;"><!--DOES NOT PROVE-->
+<!ENTITY nvge "&#x2265;&#x20D2;"><!--GREATER-THAN OR EQUAL TO with vertical line-->
+<!ENTITY nvgt "&#x3E;&#x20D2;"><!--GREATER-THAN SIGN with vertical line-->
+<!ENTITY nvHarr "&#x2904;"><!--LEFT RIGHT DOUBLE ARROW WITH VERTICAL STROKE-->
+<!ENTITY nvinfin "&#x29DE;"><!--INFINITY NEGATED WITH VERTICAL BAR-->
+<!ENTITY nvlArr "&#x2902;"><!--LEFTWARDS DOUBLE ARROW WITH VERTICAL STROKE-->
+<!ENTITY nvle "&#x2264;&#x20D2;"><!--LESS-THAN OR EQUAL TO with vertical line-->
+<!ENTITY nvlt "&#38;#x3C;&#x20D2;"><!--LESS-THAN SIGN with vertical line-->
+<!ENTITY nvltrie "&#x22B4;&#x20D2;"><!--NORMAL SUBGROUP OF OR EQUAL TO with vertical line-->
+<!ENTITY nvrArr "&#x2903;"><!--RIGHTWARDS DOUBLE ARROW WITH VERTICAL STROKE-->
+<!ENTITY nvrtrie "&#x22B5;&#x20D2;"><!--CONTAINS AS NORMAL SUBGROUP OR EQUAL TO with vertical line-->
+<!ENTITY nvsim "&#x223C;&#x20D2;"><!--TILDE OPERATOR with vertical line-->
+<!ENTITY nwarhk "&#x2923;"><!--NORTH WEST ARROW WITH HOOK-->
+<!ENTITY nwArr "&#x21D6;"><!--NORTH WEST DOUBLE ARROW-->
+<!ENTITY nwarr "&#x2196;"><!--NORTH WEST ARROW-->
+<!ENTITY nwarrow "&#x2196;"><!--NORTH WEST ARROW-->
+<!ENTITY nwnear "&#x2927;"><!--NORTH WEST ARROW AND NORTH EAST ARROW-->
+<!ENTITY Oacute "&#xD3;"><!--LATIN CAPITAL LETTER O WITH ACUTE-->
+<!ENTITY oacute "&#xF3;"><!--LATIN SMALL LETTER O WITH ACUTE-->
+<!ENTITY oast "&#x229B;"><!--CIRCLED ASTERISK OPERATOR-->
+<!ENTITY ocir "&#x229A;"><!--CIRCLED RING OPERATOR-->
+<!ENTITY Ocirc "&#xD4;"><!--LATIN CAPITAL LETTER O WITH CIRCUMFLEX-->
+<!ENTITY ocirc "&#xF4;"><!--LATIN SMALL LETTER O WITH CIRCUMFLEX-->
+<!ENTITY Ocy "&#x41E;"><!--CYRILLIC CAPITAL LETTER O-->
+<!ENTITY ocy "&#x43E;"><!--CYRILLIC SMALL LETTER O-->
+<!ENTITY odash "&#x229D;"><!--CIRCLED DASH-->
+<!ENTITY Odblac "&#x150;"><!--LATIN CAPITAL LETTER O WITH DOUBLE ACUTE-->
+<!ENTITY odblac "&#x151;"><!--LATIN SMALL LETTER O WITH DOUBLE ACUTE-->
+<!ENTITY odiv "&#x2A38;"><!--CIRCLED DIVISION SIGN-->
+<!ENTITY odot "&#x2299;"><!--CIRCLED DOT OPERATOR-->
+<!ENTITY odsold "&#x29BC;"><!--CIRCLED ANTICLOCKWISE-ROTATED DIVISION SIGN-->
+<!ENTITY OElig "&#x152;"><!--LATIN CAPITAL LIGATURE OE-->
+<!ENTITY oelig "&#x153;"><!--LATIN SMALL LIGATURE OE-->
+<!ENTITY ofcir "&#x29BF;"><!--CIRCLED BULLET-->
+<!ENTITY Ofr "&#x1D512;"><!--MATHEMATICAL FRAKTUR CAPITAL O-->
+<!ENTITY ofr "&#x1D52C;"><!--MATHEMATICAL FRAKTUR SMALL O-->
+<!ENTITY ogon "&#x2DB;"><!--OGONEK-->
+<!ENTITY Ograve "&#xD2;"><!--LATIN CAPITAL LETTER O WITH GRAVE-->
+<!ENTITY ograve "&#xF2;"><!--LATIN SMALL LETTER O WITH GRAVE-->
+<!ENTITY ogt "&#x29C1;"><!--CIRCLED GREATER-THAN-->
+<!ENTITY ohbar "&#x29B5;"><!--CIRCLE WITH HORIZONTAL BAR-->
+<!ENTITY ohm "&#x3A9;"><!--GREEK CAPITAL LETTER OMEGA-->
+<!ENTITY oint "&#x222E;"><!--CONTOUR INTEGRAL-->
+<!ENTITY olarr "&#x21BA;"><!--ANTICLOCKWISE OPEN CIRCLE ARROW-->
+<!ENTITY olcir "&#x29BE;"><!--CIRCLED WHITE BULLET-->
+<!ENTITY olcross "&#x29BB;"><!--CIRCLE WITH SUPERIMPOSED X-->
+<!ENTITY oline "&#x203E;"><!--OVERLINE-->
+<!ENTITY olt "&#x29C0;"><!--CIRCLED LESS-THAN-->
+<!ENTITY Omacr "&#x14C;"><!--LATIN CAPITAL LETTER O WITH MACRON-->
+<!ENTITY omacr "&#x14D;"><!--LATIN SMALL LETTER O WITH MACRON-->
+<!ENTITY Omega "&#x3A9;"><!--GREEK CAPITAL LETTER OMEGA-->
+<!ENTITY omega "&#x3C9;"><!--GREEK SMALL LETTER OMEGA-->
+<!ENTITY Omicron "&#x39F;"><!--GREEK CAPITAL LETTER OMICRON-->
+<!ENTITY omicron "&#x3BF;"><!--GREEK SMALL LETTER OMICRON-->
+<!ENTITY omid "&#x29B6;"><!--CIRCLED VERTICAL BAR-->
+<!ENTITY ominus "&#x2296;"><!--CIRCLED MINUS-->
+<!ENTITY Oopf "&#x1D546;"><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL O-->
+<!ENTITY oopf "&#x1D560;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL O-->
+<!ENTITY opar "&#x29B7;"><!--CIRCLED PARALLEL-->
+<!ENTITY OpenCurlyDoubleQuote "&#x201C;"><!--LEFT DOUBLE QUOTATION MARK-->
+<!ENTITY OpenCurlyQuote "&#x2018;"><!--LEFT SINGLE QUOTATION MARK-->
+<!ENTITY operp "&#x29B9;"><!--CIRCLED PERPENDICULAR-->
+<!ENTITY oplus "&#x2295;"><!--CIRCLED PLUS-->
+<!ENTITY Or "&#x2A54;"><!--DOUBLE LOGICAL OR-->
+<!ENTITY or "&#x2228;"><!--LOGICAL OR-->
+<!ENTITY orarr "&#x21BB;"><!--CLOCKWISE OPEN CIRCLE ARROW-->
+<!ENTITY ord "&#x2A5D;"><!--LOGICAL OR WITH HORIZONTAL DASH-->
+<!ENTITY order "&#x2134;"><!--SCRIPT SMALL O-->
+<!ENTITY orderof "&#x2134;"><!--SCRIPT SMALL O-->
+<!ENTITY ordf "&#xAA;"><!--FEMININE ORDINAL INDICATOR-->
+<!ENTITY ordm "&#xBA;"><!--MASCULINE ORDINAL INDICATOR-->
+<!ENTITY origof "&#x22B6;"><!--ORIGINAL OF-->
+<!ENTITY oror "&#x2A56;"><!--TWO INTERSECTING LOGICAL OR-->
+<!ENTITY orslope "&#x2A57;"><!--SLOPING LARGE OR-->
+<!ENTITY orv "&#x2A5B;"><!--LOGICAL OR WITH MIDDLE STEM-->
+<!ENTITY oS "&#x24C8;"><!--CIRCLED LATIN CAPITAL LETTER S-->
+<!ENTITY Oscr "&#x1D4AA;"><!--MATHEMATICAL SCRIPT CAPITAL O-->
+<!ENTITY oscr "&#x2134;"><!--SCRIPT SMALL O-->
+<!ENTITY Oslash "&#xD8;"><!--LATIN CAPITAL LETTER O WITH STROKE-->
+<!ENTITY oslash "&#xF8;"><!--LATIN SMALL LETTER O WITH STROKE-->
+<!ENTITY osol "&#x2298;"><!--CIRCLED DIVISION SLASH-->
+<!ENTITY Otilde "&#xD5;"><!--LATIN CAPITAL LETTER O WITH TILDE-->
+<!ENTITY otilde "&#xF5;"><!--LATIN SMALL LETTER O WITH TILDE-->
+<!ENTITY Otimes "&#x2A37;"><!--MULTIPLICATION SIGN IN DOUBLE CIRCLE-->
+<!ENTITY otimes "&#x2297;"><!--CIRCLED TIMES-->
+<!ENTITY otimesas "&#x2A36;"><!--CIRCLED MULTIPLICATION SIGN WITH CIRCUMFLEX ACCENT-->
+<!ENTITY Ouml "&#xD6;"><!--LATIN CAPITAL LETTER O WITH DIAERESIS-->
+<!ENTITY ouml "&#xF6;"><!--LATIN SMALL LETTER O WITH DIAERESIS-->
+<!ENTITY ovbar "&#x233D;"><!--APL FUNCTIONAL SYMBOL CIRCLE STILE-->
+<!ENTITY OverBar "&#x203E;"><!--OVERLINE-->
+<!ENTITY OverBrace "&#x23DE;"><!--TOP CURLY BRACKET-->
+<!ENTITY OverBracket "&#x23B4;"><!--TOP SQUARE BRACKET-->
+<!ENTITY OverParenthesis "&#x23DC;"><!--TOP PARENTHESIS-->
+<!ENTITY par "&#x2225;"><!--PARALLEL TO-->
+<!ENTITY para "&#xB6;"><!--PILCROW SIGN-->
+<!ENTITY parallel "&#x2225;"><!--PARALLEL TO-->
+<!ENTITY parsim "&#x2AF3;"><!--PARALLEL WITH TILDE OPERATOR-->
+<!ENTITY parsl "&#x2AFD;"><!--DOUBLE SOLIDUS OPERATOR-->
+<!ENTITY part "&#x2202;"><!--PARTIAL DIFFERENTIAL-->
+<!ENTITY PartialD "&#x2202;"><!--PARTIAL DIFFERENTIAL-->
+<!ENTITY Pcy "&#x41F;"><!--CYRILLIC CAPITAL LETTER PE-->
+<!ENTITY pcy "&#x43F;"><!--CYRILLIC SMALL LETTER PE-->
+<!ENTITY percnt "&#x25;"><!--PERCENT SIGN-->
+<!ENTITY period "&#x2E;"><!--FULL STOP-->
+<!ENTITY permil "&#x2030;"><!--PER MILLE SIGN-->
+<!ENTITY perp "&#x22A5;"><!--UP TACK-->
+<!ENTITY pertenk "&#x2031;"><!--PER TEN THOUSAND SIGN-->
+<!ENTITY Pfr "&#x1D513;"><!--MATHEMATICAL FRAKTUR CAPITAL P-->
+<!ENTITY pfr "&#x1D52D;"><!--MATHEMATICAL FRAKTUR SMALL P-->
+<!ENTITY Phi "&#x3A6;"><!--GREEK CAPITAL LETTER PHI-->
+<!ENTITY phi "&#x3C6;"><!--GREEK SMALL LETTER PHI-->
+<!ENTITY phiv "&#x3D5;"><!--GREEK PHI SYMBOL-->
+<!ENTITY phmmat "&#x2133;"><!--SCRIPT CAPITAL M-->
+<!ENTITY phone "&#x260E;"><!--BLACK TELEPHONE-->
+<!ENTITY Pi "&#x3A0;"><!--GREEK CAPITAL LETTER PI-->
+<!ENTITY pi "&#x3C0;"><!--GREEK SMALL LETTER PI-->
+<!ENTITY pitchfork "&#x22D4;"><!--PITCHFORK-->
+<!ENTITY piv "&#x3D6;"><!--GREEK PI SYMBOL-->
+<!ENTITY planck "&#x210F;"><!--PLANCK CONSTANT OVER TWO PI-->
+<!ENTITY planckh "&#x210E;"><!--PLANCK CONSTANT-->
+<!ENTITY plankv "&#x210F;"><!--PLANCK CONSTANT OVER TWO PI-->
+<!ENTITY plus "&#x2B;"><!--PLUS SIGN-->
+<!ENTITY plusacir "&#x2A23;"><!--PLUS SIGN WITH CIRCUMFLEX ACCENT ABOVE-->
+<!ENTITY plusb "&#x229E;"><!--SQUARED PLUS-->
+<!ENTITY pluscir "&#x2A22;"><!--PLUS SIGN WITH SMALL CIRCLE ABOVE-->
+<!ENTITY plusdo "&#x2214;"><!--DOT PLUS-->
+<!ENTITY plusdu "&#x2A25;"><!--PLUS SIGN WITH DOT BELOW-->
+<!ENTITY pluse "&#x2A72;"><!--PLUS SIGN ABOVE EQUALS SIGN-->
+<!ENTITY PlusMinus "&#xB1;"><!--PLUS-MINUS SIGN-->
+<!ENTITY plusmn "&#xB1;"><!--PLUS-MINUS SIGN-->
+<!ENTITY plussim "&#x2A26;"><!--PLUS SIGN WITH TILDE BELOW-->
+<!ENTITY plustwo "&#x2A27;"><!--PLUS SIGN WITH SUBSCRIPT TWO-->
+<!ENTITY pm "&#xB1;"><!--PLUS-MINUS SIGN-->
+<!ENTITY Poincareplane "&#x210C;"><!--BLACK-LETTER CAPITAL H-->
+<!ENTITY pointint "&#x2A15;"><!--INTEGRAL AROUND A POINT OPERATOR-->
+<!ENTITY Popf "&#x2119;"><!--DOUBLE-STRUCK CAPITAL P-->
+<!ENTITY popf "&#x1D561;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL P-->
+<!ENTITY pound "&#xA3;"><!--POUND SIGN-->
+<!ENTITY Pr "&#x2ABB;"><!--DOUBLE PRECEDES-->
+<!ENTITY pr "&#x227A;"><!--PRECEDES-->
+<!ENTITY prap "&#x2AB7;"><!--PRECEDES ABOVE ALMOST EQUAL TO-->
+<!ENTITY prcue "&#x227C;"><!--PRECEDES OR EQUAL TO-->
+<!ENTITY prE "&#x2AB3;"><!--PRECEDES ABOVE EQUALS SIGN-->
+<!ENTITY pre "&#x2AAF;"><!--PRECEDES ABOVE SINGLE-LINE EQUALS SIGN-->
+<!ENTITY prec "&#x227A;"><!--PRECEDES-->
+<!ENTITY precapprox "&#x2AB7;"><!--PRECEDES ABOVE ALMOST EQUAL TO-->
+<!ENTITY preccurlyeq "&#x227C;"><!--PRECEDES OR EQUAL TO-->
+<!ENTITY Precedes "&#x227A;"><!--PRECEDES-->
+<!ENTITY PrecedesEqual "&#x2AAF;"><!--PRECEDES ABOVE SINGLE-LINE EQUALS SIGN-->
+<!ENTITY PrecedesSlantEqual "&#x227C;"><!--PRECEDES OR EQUAL TO-->
+<!ENTITY PrecedesTilde "&#x227E;"><!--PRECEDES OR EQUIVALENT TO-->
+<!ENTITY preceq "&#x2AAF;"><!--PRECEDES ABOVE SINGLE-LINE EQUALS SIGN-->
+<!ENTITY precnapprox "&#x2AB9;"><!--PRECEDES ABOVE NOT ALMOST EQUAL TO-->
+<!ENTITY precneqq "&#x2AB5;"><!--PRECEDES ABOVE NOT EQUAL TO-->
+<!ENTITY precnsim "&#x22E8;"><!--PRECEDES BUT NOT EQUIVALENT TO-->
+<!ENTITY precsim "&#x227E;"><!--PRECEDES OR EQUIVALENT TO-->
+<!ENTITY Prime "&#x2033;"><!--DOUBLE PRIME-->
+<!ENTITY prime "&#x2032;"><!--PRIME-->
+<!ENTITY primes "&#x2119;"><!--DOUBLE-STRUCK CAPITAL P-->
+<!ENTITY prnap "&#x2AB9;"><!--PRECEDES ABOVE NOT ALMOST EQUAL TO-->
+<!ENTITY prnE "&#x2AB5;"><!--PRECEDES ABOVE NOT EQUAL TO-->
+<!ENTITY prnsim "&#x22E8;"><!--PRECEDES BUT NOT EQUIVALENT TO-->
+<!ENTITY prod "&#x220F;"><!--N-ARY PRODUCT-->
+<!ENTITY Product "&#x220F;"><!--N-ARY PRODUCT-->
+<!ENTITY profalar "&#x232E;"><!--ALL AROUND-PROFILE-->
+<!ENTITY profline "&#x2312;"><!--ARC-->
+<!ENTITY profsurf "&#x2313;"><!--SEGMENT-->
+<!ENTITY prop "&#x221D;"><!--PROPORTIONAL TO-->
+<!ENTITY Proportion "&#x2237;"><!--PROPORTION-->
+<!ENTITY Proportional "&#x221D;"><!--PROPORTIONAL TO-->
+<!ENTITY propto "&#x221D;"><!--PROPORTIONAL TO-->
+<!ENTITY prsim "&#x227E;"><!--PRECEDES OR EQUIVALENT TO-->
+<!ENTITY prurel "&#x22B0;"><!--PRECEDES UNDER RELATION-->
+<!ENTITY Pscr "&#x1D4AB;"><!--MATHEMATICAL SCRIPT CAPITAL P-->
+<!ENTITY pscr "&#x1D4C5;"><!--MATHEMATICAL SCRIPT SMALL P-->
+<!ENTITY Psi "&#x3A8;"><!--GREEK CAPITAL LETTER PSI-->
+<!ENTITY psi "&#x3C8;"><!--GREEK SMALL LETTER PSI-->
+<!ENTITY puncsp "&#x2008;"><!--PUNCTUATION SPACE-->
+<!ENTITY Qfr "&#x1D514;"><!--MATHEMATICAL FRAKTUR CAPITAL Q-->
+<!ENTITY qfr "&#x1D52E;"><!--MATHEMATICAL FRAKTUR SMALL Q-->
+<!ENTITY qint "&#x2A0C;"><!--QUADRUPLE INTEGRAL OPERATOR-->
+<!ENTITY Qopf "&#x211A;"><!--DOUBLE-STRUCK CAPITAL Q-->
+<!ENTITY qopf "&#x1D562;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL Q-->
+<!ENTITY qprime "&#x2057;"><!--QUADRUPLE PRIME-->
+<!ENTITY Qscr "&#x1D4AC;"><!--MATHEMATICAL SCRIPT CAPITAL Q-->
+<!ENTITY qscr "&#x1D4C6;"><!--MATHEMATICAL SCRIPT SMALL Q-->
+<!ENTITY quaternions "&#x210D;"><!--DOUBLE-STRUCK CAPITAL H-->
+<!ENTITY quatint "&#x2A16;"><!--QUATERNION INTEGRAL OPERATOR-->
+<!ENTITY quest "&#x3F;"><!--QUESTION MARK-->
+<!ENTITY questeq "&#x225F;"><!--QUESTIONED EQUAL TO-->
+<!ENTITY QUOT "&#x22;"><!--QUOTATION MARK-->
+<!ENTITY quot "&#x22;"><!--QUOTATION MARK-->
+<!ENTITY rAarr "&#x21DB;"><!--RIGHTWARDS TRIPLE ARROW-->
+<!ENTITY race "&#x223D;&#x331;"><!--REVERSED TILDE with underline-->
+<!ENTITY Racute "&#x154;"><!--LATIN CAPITAL LETTER R WITH ACUTE-->
+<!ENTITY racute "&#x155;"><!--LATIN SMALL LETTER R WITH ACUTE-->
+<!ENTITY radic "&#x221A;"><!--SQUARE ROOT-->
+<!ENTITY raemptyv "&#x29B3;"><!--EMPTY SET WITH RIGHT ARROW ABOVE-->
+<!ENTITY Rang "&#x27EB;"><!--MATHEMATICAL RIGHT DOUBLE ANGLE BRACKET-->
+<!ENTITY rang "&#x27E9;"><!--MATHEMATICAL RIGHT ANGLE BRACKET-->
+<!ENTITY rangd "&#x2992;"><!--RIGHT ANGLE BRACKET WITH DOT-->
+<!ENTITY range "&#x29A5;"><!--REVERSED ANGLE WITH UNDERBAR-->
+<!ENTITY rangle "&#x27E9;"><!--MATHEMATICAL RIGHT ANGLE BRACKET-->
+<!ENTITY raquo "&#xBB;"><!--RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK-->
+<!ENTITY Rarr "&#x21A0;"><!--RIGHTWARDS TWO HEADED ARROW-->
+<!ENTITY rArr "&#x21D2;"><!--RIGHTWARDS DOUBLE ARROW-->
+<!ENTITY rarr "&#x2192;"><!--RIGHTWARDS ARROW-->
+<!ENTITY rarrap "&#x2975;"><!--RIGHTWARDS ARROW ABOVE ALMOST EQUAL TO-->
+<!ENTITY rarrb "&#x21E5;"><!--RIGHTWARDS ARROW TO BAR-->
+<!ENTITY rarrbfs "&#x2920;"><!--RIGHTWARDS ARROW FROM BAR TO BLACK DIAMOND-->
+<!ENTITY rarrc "&#x2933;"><!--WAVE ARROW POINTING DIRECTLY RIGHT-->
+<!ENTITY rarrfs "&#x291E;"><!--RIGHTWARDS ARROW TO BLACK DIAMOND-->
+<!ENTITY rarrhk "&#x21AA;"><!--RIGHTWARDS ARROW WITH HOOK-->
+<!ENTITY rarrlp "&#x21AC;"><!--RIGHTWARDS ARROW WITH LOOP-->
+<!ENTITY rarrpl "&#x2945;"><!--RIGHTWARDS ARROW WITH PLUS BELOW-->
+<!ENTITY rarrsim "&#x2974;"><!--RIGHTWARDS ARROW ABOVE TILDE OPERATOR-->
+<!ENTITY Rarrtl "&#x2916;"><!--RIGHTWARDS TWO-HEADED ARROW WITH TAIL-->
+<!ENTITY rarrtl "&#x21A3;"><!--RIGHTWARDS ARROW WITH TAIL-->
+<!ENTITY rarrw "&#x219D;"><!--RIGHTWARDS WAVE ARROW-->
+<!ENTITY rAtail "&#x291C;"><!--RIGHTWARDS DOUBLE ARROW-TAIL-->
+<!ENTITY ratail "&#x291A;"><!--RIGHTWARDS ARROW-TAIL-->
+<!ENTITY ratio "&#x2236;"><!--RATIO-->
+<!ENTITY rationals "&#x211A;"><!--DOUBLE-STRUCK CAPITAL Q-->
+<!ENTITY RBarr "&#x2910;"><!--RIGHTWARDS TWO-HEADED TRIPLE DASH ARROW-->
+<!ENTITY rBarr "&#x290F;"><!--RIGHTWARDS TRIPLE DASH ARROW-->
+<!ENTITY rbarr "&#x290D;"><!--RIGHTWARDS DOUBLE DASH ARROW-->
+<!ENTITY rbbrk "&#x2773;"><!--LIGHT RIGHT TORTOISE SHELL BRACKET ORNAMENT-->
+<!ENTITY rbrace "&#x7D;"><!--RIGHT CURLY BRACKET-->
+<!ENTITY rbrack "&#x5D;"><!--RIGHT SQUARE BRACKET-->
+<!ENTITY rbrke "&#x298C;"><!--RIGHT SQUARE BRACKET WITH UNDERBAR-->
+<!ENTITY rbrksld "&#x298E;"><!--RIGHT SQUARE BRACKET WITH TICK IN BOTTOM CORNER-->
+<!ENTITY rbrkslu "&#x2990;"><!--RIGHT SQUARE BRACKET WITH TICK IN TOP CORNER-->
+<!ENTITY Rcaron "&#x158;"><!--LATIN CAPITAL LETTER R WITH CARON-->
+<!ENTITY rcaron "&#x159;"><!--LATIN SMALL LETTER R WITH CARON-->
+<!ENTITY Rcedil "&#x156;"><!--LATIN CAPITAL LETTER R WITH CEDILLA-->
+<!ENTITY rcedil "&#x157;"><!--LATIN SMALL LETTER R WITH CEDILLA-->
+<!ENTITY rceil "&#x2309;"><!--RIGHT CEILING-->
+<!ENTITY rcub "&#x7D;"><!--RIGHT CURLY BRACKET-->
+<!ENTITY Rcy "&#x420;"><!--CYRILLIC CAPITAL LETTER ER-->
+<!ENTITY rcy "&#x440;"><!--CYRILLIC SMALL LETTER ER-->
+<!ENTITY rdca "&#x2937;"><!--ARROW POINTING DOWNWARDS THEN CURVING RIGHTWARDS-->
+<!ENTITY rdldhar "&#x2969;"><!--RIGHTWARDS HARPOON WITH BARB DOWN ABOVE LEFTWARDS HARPOON WITH BARB DOWN-->
+<!ENTITY rdquo "&#x201D;"><!--RIGHT DOUBLE QUOTATION MARK-->
+<!ENTITY rdquor "&#x201D;"><!--RIGHT DOUBLE QUOTATION MARK-->
+<!ENTITY rdsh "&#x21B3;"><!--DOWNWARDS ARROW WITH TIP RIGHTWARDS-->
+<!ENTITY Re "&#x211C;"><!--BLACK-LETTER CAPITAL R-->
+<!ENTITY real "&#x211C;"><!--BLACK-LETTER CAPITAL R-->
+<!ENTITY realine "&#x211B;"><!--SCRIPT CAPITAL R-->
+<!ENTITY realpart "&#x211C;"><!--BLACK-LETTER CAPITAL R-->
+<!ENTITY reals "&#x211D;"><!--DOUBLE-STRUCK CAPITAL R-->
+<!ENTITY rect "&#x25AD;"><!--WHITE RECTANGLE-->
+<!ENTITY REG "&#xAE;"><!--REGISTERED SIGN-->
+<!ENTITY reg "&#xAE;"><!--REGISTERED SIGN-->
+<!ENTITY ReverseElement "&#x220B;"><!--CONTAINS AS MEMBER-->
+<!ENTITY ReverseEquilibrium "&#x21CB;"><!--LEFTWARDS HARPOON OVER RIGHTWARDS HARPOON-->
+<!ENTITY ReverseUpEquilibrium "&#x296F;"><!--DOWNWARDS HARPOON WITH BARB LEFT BESIDE UPWARDS HARPOON WITH BARB RIGHT-->
+<!ENTITY rfisht "&#x297D;"><!--RIGHT FISH TAIL-->
+<!ENTITY rfloor "&#x230B;"><!--RIGHT FLOOR-->
+<!ENTITY Rfr "&#x211C;"><!--BLACK-LETTER CAPITAL R-->
+<!ENTITY rfr "&#x1D52F;"><!--MATHEMATICAL FRAKTUR SMALL R-->
+<!ENTITY rHar "&#x2964;"><!--RIGHTWARDS HARPOON WITH BARB UP ABOVE RIGHTWARDS HARPOON WITH BARB DOWN-->
+<!ENTITY rhard "&#x21C1;"><!--RIGHTWARDS HARPOON WITH BARB DOWNWARDS-->
+<!ENTITY rharu "&#x21C0;"><!--RIGHTWARDS HARPOON WITH BARB UPWARDS-->
+<!ENTITY rharul "&#x296C;"><!--RIGHTWARDS HARPOON WITH BARB UP ABOVE LONG DASH-->
+<!ENTITY Rho "&#x3A1;"><!--GREEK CAPITAL LETTER RHO-->
+<!ENTITY rho "&#x3C1;"><!--GREEK SMALL LETTER RHO-->
+<!ENTITY rhov "&#x3F1;"><!--GREEK RHO SYMBOL-->
+<!ENTITY RightAngleBracket "&#x27E9;"><!--MATHEMATICAL RIGHT ANGLE BRACKET-->
+<!ENTITY RightArrow "&#x2192;"><!--RIGHTWARDS ARROW-->
+<!ENTITY Rightarrow "&#x21D2;"><!--RIGHTWARDS DOUBLE ARROW-->
+<!ENTITY rightarrow "&#x2192;"><!--RIGHTWARDS ARROW-->
+<!ENTITY RightArrowBar "&#x21E5;"><!--RIGHTWARDS ARROW TO BAR-->
+<!ENTITY RightArrowLeftArrow "&#x21C4;"><!--RIGHTWARDS ARROW OVER LEFTWARDS ARROW-->
+<!ENTITY rightarrowtail "&#x21A3;"><!--RIGHTWARDS ARROW WITH TAIL-->
+<!ENTITY RightCeiling "&#x2309;"><!--RIGHT CEILING-->
+<!ENTITY RightDoubleBracket "&#x27E7;"><!--MATHEMATICAL RIGHT WHITE SQUARE BRACKET-->
+<!ENTITY RightDownTeeVector "&#x295D;"><!--DOWNWARDS HARPOON WITH BARB RIGHT FROM BAR-->
+<!ENTITY RightDownVector "&#x21C2;"><!--DOWNWARDS HARPOON WITH BARB RIGHTWARDS-->
+<!ENTITY RightDownVectorBar "&#x2955;"><!--DOWNWARDS HARPOON WITH BARB RIGHT TO BAR-->
+<!ENTITY RightFloor "&#x230B;"><!--RIGHT FLOOR-->
+<!ENTITY rightharpoondown "&#x21C1;"><!--RIGHTWARDS HARPOON WITH BARB DOWNWARDS-->
+<!ENTITY rightharpoonup "&#x21C0;"><!--RIGHTWARDS HARPOON WITH BARB UPWARDS-->
+<!ENTITY rightleftarrows "&#x21C4;"><!--RIGHTWARDS ARROW OVER LEFTWARDS ARROW-->
+<!ENTITY rightleftharpoons "&#x21CC;"><!--RIGHTWARDS HARPOON OVER LEFTWARDS HARPOON-->
+<!ENTITY rightrightarrows "&#x21C9;"><!--RIGHTWARDS PAIRED ARROWS-->
+<!ENTITY rightsquigarrow "&#x219D;"><!--RIGHTWARDS WAVE ARROW-->
+<!ENTITY RightTee "&#x22A2;"><!--RIGHT TACK-->
+<!ENTITY RightTeeArrow "&#x21A6;"><!--RIGHTWARDS ARROW FROM BAR-->
+<!ENTITY RightTeeVector "&#x295B;"><!--RIGHTWARDS HARPOON WITH BARB UP FROM BAR-->
+<!ENTITY rightthreetimes "&#x22CC;"><!--RIGHT SEMIDIRECT PRODUCT-->
+<!ENTITY RightTriangle "&#x22B3;"><!--CONTAINS AS NORMAL SUBGROUP-->
+<!ENTITY RightTriangleBar "&#x29D0;"><!--VERTICAL BAR BESIDE RIGHT TRIANGLE-->
+<!ENTITY RightTriangleEqual "&#x22B5;"><!--CONTAINS AS NORMAL SUBGROUP OR EQUAL TO-->
+<!ENTITY RightUpDownVector "&#x294F;"><!--UP BARB RIGHT DOWN BARB RIGHT HARPOON-->
+<!ENTITY RightUpTeeVector "&#x295C;"><!--UPWARDS HARPOON WITH BARB RIGHT FROM BAR-->
+<!ENTITY RightUpVector "&#x21BE;"><!--UPWARDS HARPOON WITH BARB RIGHTWARDS-->
+<!ENTITY RightUpVectorBar "&#x2954;"><!--UPWARDS HARPOON WITH BARB RIGHT TO BAR-->
+<!ENTITY RightVector "&#x21C0;"><!--RIGHTWARDS HARPOON WITH BARB UPWARDS-->
+<!ENTITY RightVectorBar "&#x2953;"><!--RIGHTWARDS HARPOON WITH BARB UP TO BAR-->
+<!ENTITY ring "&#x2DA;"><!--RING ABOVE-->
+<!ENTITY risingdotseq "&#x2253;"><!--IMAGE OF OR APPROXIMATELY EQUAL TO-->
+<!ENTITY rlarr "&#x21C4;"><!--RIGHTWARDS ARROW OVER LEFTWARDS ARROW-->
+<!ENTITY rlhar "&#x21CC;"><!--RIGHTWARDS HARPOON OVER LEFTWARDS HARPOON-->
+<!ENTITY rlm "&#x200F;"><!--RIGHT-TO-LEFT MARK-->
+<!ENTITY rmoust "&#x23B1;"><!--UPPER RIGHT OR LOWER LEFT CURLY BRACKET SECTION-->
+<!ENTITY rmoustache "&#x23B1;"><!--UPPER RIGHT OR LOWER LEFT CURLY BRACKET SECTION-->
+<!ENTITY rnmid "&#x2AEE;"><!--DOES NOT DIVIDE WITH REVERSED NEGATION SLASH-->
+<!ENTITY roang "&#x27ED;"><!--MATHEMATICAL RIGHT WHITE TORTOISE SHELL BRACKET-->
+<!ENTITY roarr "&#x21FE;"><!--RIGHTWARDS OPEN-HEADED ARROW-->
+<!ENTITY robrk "&#x27E7;"><!--MATHEMATICAL RIGHT WHITE SQUARE BRACKET-->
+<!ENTITY ropar "&#x2986;"><!--RIGHT WHITE PARENTHESIS-->
+<!ENTITY Ropf "&#x211D;"><!--DOUBLE-STRUCK CAPITAL R-->
+<!ENTITY ropf "&#x1D563;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL R-->
+<!ENTITY roplus "&#x2A2E;"><!--PLUS SIGN IN RIGHT HALF CIRCLE-->
+<!ENTITY rotimes "&#x2A35;"><!--MULTIPLICATION SIGN IN RIGHT HALF CIRCLE-->
+<!ENTITY RoundImplies "&#x2970;"><!--RIGHT DOUBLE ARROW WITH ROUNDED HEAD-->
+<!ENTITY rpar "&#x29;"><!--RIGHT PARENTHESIS-->
+<!ENTITY rpargt "&#x2994;"><!--RIGHT ARC GREATER-THAN BRACKET-->
+<!ENTITY rppolint "&#x2A12;"><!--LINE INTEGRATION WITH RECTANGULAR PATH AROUND POLE-->
+<!ENTITY rrarr "&#x21C9;"><!--RIGHTWARDS PAIRED ARROWS-->
+<!ENTITY Rrightarrow "&#x21DB;"><!--RIGHTWARDS TRIPLE ARROW-->
+<!ENTITY rsaquo "&#x203A;"><!--SINGLE RIGHT-POINTING ANGLE QUOTATION MARK-->
+<!ENTITY Rscr "&#x211B;"><!--SCRIPT CAPITAL R-->
+<!ENTITY rscr "&#x1D4C7;"><!--MATHEMATICAL SCRIPT SMALL R-->
+<!ENTITY Rsh "&#x21B1;"><!--UPWARDS ARROW WITH TIP RIGHTWARDS-->
+<!ENTITY rsh "&#x21B1;"><!--UPWARDS ARROW WITH TIP RIGHTWARDS-->
+<!ENTITY rsqb "&#x5D;"><!--RIGHT SQUARE BRACKET-->
+<!ENTITY rsquo "&#x2019;"><!--RIGHT SINGLE QUOTATION MARK-->
+<!ENTITY rsquor "&#x2019;"><!--RIGHT SINGLE QUOTATION MARK-->
+<!ENTITY rthree "&#x22CC;"><!--RIGHT SEMIDIRECT PRODUCT-->
+<!ENTITY rtimes "&#x22CA;"><!--RIGHT NORMAL FACTOR SEMIDIRECT PRODUCT-->
+<!ENTITY rtri "&#x25B9;"><!--WHITE RIGHT-POINTING SMALL TRIANGLE-->
+<!ENTITY rtrie "&#x22B5;"><!--CONTAINS AS NORMAL SUBGROUP OR EQUAL TO-->
+<!ENTITY rtrif "&#x25B8;"><!--BLACK RIGHT-POINTING SMALL TRIANGLE-->
+<!ENTITY rtriltri "&#x29CE;"><!--RIGHT TRIANGLE ABOVE LEFT TRIANGLE-->
+<!ENTITY RuleDelayed "&#x29F4;"><!--RULE-DELAYED-->
+<!ENTITY ruluhar "&#x2968;"><!--RIGHTWARDS HARPOON WITH BARB UP ABOVE LEFTWARDS HARPOON WITH BARB UP-->
+<!ENTITY rx "&#x211E;"><!--PRESCRIPTION TAKE-->
+<!ENTITY Sacute "&#x15A;"><!--LATIN CAPITAL LETTER S WITH ACUTE-->
+<!ENTITY sacute "&#x15B;"><!--LATIN SMALL LETTER S WITH ACUTE-->
+<!ENTITY sbquo "&#x201A;"><!--SINGLE LOW-9 QUOTATION MARK-->
+<!ENTITY Sc "&#x2ABC;"><!--DOUBLE SUCCEEDS-->
+<!ENTITY sc "&#x227B;"><!--SUCCEEDS-->
+<!ENTITY scap "&#x2AB8;"><!--SUCCEEDS ABOVE ALMOST EQUAL TO-->
+<!ENTITY Scaron "&#x160;"><!--LATIN CAPITAL LETTER S WITH CARON-->
+<!ENTITY scaron "&#x161;"><!--LATIN SMALL LETTER S WITH CARON-->
+<!ENTITY sccue "&#x227D;"><!--SUCCEEDS OR EQUAL TO-->
+<!ENTITY scE "&#x2AB4;"><!--SUCCEEDS ABOVE EQUALS SIGN-->
+<!ENTITY sce "&#x2AB0;"><!--SUCCEEDS ABOVE SINGLE-LINE EQUALS SIGN-->
+<!ENTITY Scedil "&#x15E;"><!--LATIN CAPITAL LETTER S WITH CEDILLA-->
+<!ENTITY scedil "&#x15F;"><!--LATIN SMALL LETTER S WITH CEDILLA-->
+<!ENTITY Scirc "&#x15C;"><!--LATIN CAPITAL LETTER S WITH CIRCUMFLEX-->
+<!ENTITY scirc "&#x15D;"><!--LATIN SMALL LETTER S WITH CIRCUMFLEX-->
+<!ENTITY scnap "&#x2ABA;"><!--SUCCEEDS ABOVE NOT ALMOST EQUAL TO-->
+<!ENTITY scnE "&#x2AB6;"><!--SUCCEEDS ABOVE NOT EQUAL TO-->
+<!ENTITY scnsim "&#x22E9;"><!--SUCCEEDS BUT NOT EQUIVALENT TO-->
+<!ENTITY scpolint "&#x2A13;"><!--LINE INTEGRATION WITH SEMICIRCULAR PATH AROUND POLE-->
+<!ENTITY scsim "&#x227F;"><!--SUCCEEDS OR EQUIVALENT TO-->
+<!ENTITY Scy "&#x421;"><!--CYRILLIC CAPITAL LETTER ES-->
+<!ENTITY scy "&#x441;"><!--CYRILLIC SMALL LETTER ES-->
+<!ENTITY sdot "&#x22C5;"><!--DOT OPERATOR-->
+<!ENTITY sdotb "&#x22A1;"><!--SQUARED DOT OPERATOR-->
+<!ENTITY sdote "&#x2A66;"><!--EQUALS SIGN WITH DOT BELOW-->
+<!ENTITY searhk "&#x2925;"><!--SOUTH EAST ARROW WITH HOOK-->
+<!ENTITY seArr "&#x21D8;"><!--SOUTH EAST DOUBLE ARROW-->
+<!ENTITY searr "&#x2198;"><!--SOUTH EAST ARROW-->
+<!ENTITY searrow "&#x2198;"><!--SOUTH EAST ARROW-->
+<!ENTITY sect "&#xA7;"><!--SECTION SIGN-->
+<!ENTITY semi "&#x3B;"><!--SEMICOLON-->
+<!ENTITY seswar "&#x2929;"><!--SOUTH EAST ARROW AND SOUTH WEST ARROW-->
+<!ENTITY setminus "&#x2216;"><!--SET MINUS-->
+<!ENTITY setmn "&#x2216;"><!--SET MINUS-->
+<!ENTITY sext "&#x2736;"><!--SIX POINTED BLACK STAR-->
+<!ENTITY Sfr "&#x1D516;"><!--MATHEMATICAL FRAKTUR CAPITAL S-->
+<!ENTITY sfr "&#x1D530;"><!--MATHEMATICAL FRAKTUR SMALL S-->
+<!ENTITY sfrown "&#x2322;"><!--FROWN-->
+<!ENTITY sharp "&#x266F;"><!--MUSIC SHARP SIGN-->
+<!ENTITY SHCHcy "&#x429;"><!--CYRILLIC CAPITAL LETTER SHCHA-->
+<!ENTITY shchcy "&#x449;"><!--CYRILLIC SMALL LETTER SHCHA-->
+<!ENTITY SHcy "&#x428;"><!--CYRILLIC CAPITAL LETTER SHA-->
+<!ENTITY shcy "&#x448;"><!--CYRILLIC SMALL LETTER SHA-->
+<!ENTITY ShortDownArrow "&#x2193;"><!--DOWNWARDS ARROW-->
+<!ENTITY ShortLeftArrow "&#x2190;"><!--LEFTWARDS ARROW-->
+<!ENTITY shortmid "&#x2223;"><!--DIVIDES-->
+<!ENTITY shortparallel "&#x2225;"><!--PARALLEL TO-->
+<!ENTITY ShortRightArrow "&#x2192;"><!--RIGHTWARDS ARROW-->
+<!ENTITY ShortUpArrow "&#x2191;"><!--UPWARDS ARROW-->
+<!ENTITY shy "&#xAD;"><!--SOFT HYPHEN-->
+<!ENTITY Sigma "&#x3A3;"><!--GREEK CAPITAL LETTER SIGMA-->
+<!ENTITY sigma "&#x3C3;"><!--GREEK SMALL LETTER SIGMA-->
+<!ENTITY sigmaf "&#x3C2;"><!--GREEK SMALL LETTER FINAL SIGMA-->
+<!ENTITY sigmav "&#x3C2;"><!--GREEK SMALL LETTER FINAL SIGMA-->
+<!ENTITY sim "&#x223C;"><!--TILDE OPERATOR-->
+<!ENTITY simdot "&#x2A6A;"><!--TILDE OPERATOR WITH DOT ABOVE-->
+<!ENTITY sime "&#x2243;"><!--ASYMPTOTICALLY EQUAL TO-->
+<!ENTITY simeq "&#x2243;"><!--ASYMPTOTICALLY EQUAL TO-->
+<!ENTITY simg "&#x2A9E;"><!--SIMILAR OR GREATER-THAN-->
+<!ENTITY simgE "&#x2AA0;"><!--SIMILAR ABOVE GREATER-THAN ABOVE EQUALS SIGN-->
+<!ENTITY siml "&#x2A9D;"><!--SIMILAR OR LESS-THAN-->
+<!ENTITY simlE "&#x2A9F;"><!--SIMILAR ABOVE LESS-THAN ABOVE EQUALS SIGN-->
+<!ENTITY simne "&#x2246;"><!--APPROXIMATELY BUT NOT ACTUALLY EQUAL TO-->
+<!ENTITY simplus "&#x2A24;"><!--PLUS SIGN WITH TILDE ABOVE-->
+<!ENTITY simrarr "&#x2972;"><!--TILDE OPERATOR ABOVE RIGHTWARDS ARROW-->
+<!ENTITY slarr "&#x2190;"><!--LEFTWARDS ARROW-->
+<!ENTITY SmallCircle "&#x2218;"><!--RING OPERATOR-->
+<!ENTITY smallsetminus "&#x2216;"><!--SET MINUS-->
+<!ENTITY smashp "&#x2A33;"><!--SMASH PRODUCT-->
+<!ENTITY smeparsl "&#x29E4;"><!--EQUALS SIGN AND SLANTED PARALLEL WITH TILDE ABOVE-->
+<!ENTITY smid "&#x2223;"><!--DIVIDES-->
+<!ENTITY smile "&#x2323;"><!--SMILE-->
+<!ENTITY smt "&#x2AAA;"><!--SMALLER THAN-->
+<!ENTITY smte "&#x2AAC;"><!--SMALLER THAN OR EQUAL TO-->
+<!ENTITY smtes "&#x2AAC;&#xFE00;"><!--SMALLER THAN OR slanted EQUAL-->
+<!ENTITY SOFTcy "&#x42C;"><!--CYRILLIC CAPITAL LETTER SOFT SIGN-->
+<!ENTITY softcy "&#x44C;"><!--CYRILLIC SMALL LETTER SOFT SIGN-->
+<!ENTITY sol "&#x2F;"><!--SOLIDUS-->
+<!ENTITY solb "&#x29C4;"><!--SQUARED RISING DIAGONAL SLASH-->
+<!ENTITY solbar "&#x233F;"><!--APL FUNCTIONAL SYMBOL SLASH BAR-->
+<!ENTITY Sopf "&#x1D54A;"><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL S-->
+<!ENTITY sopf "&#x1D564;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL S-->
+<!ENTITY spades "&#x2660;"><!--BLACK SPADE SUIT-->
+<!ENTITY spadesuit "&#x2660;"><!--BLACK SPADE SUIT-->
+<!ENTITY spar "&#x2225;"><!--PARALLEL TO-->
+<!ENTITY sqcap "&#x2293;"><!--SQUARE CAP-->
+<!ENTITY sqcaps "&#x2293;&#xFE00;"><!--SQUARE CAP with serifs-->
+<!ENTITY sqcup "&#x2294;"><!--SQUARE CUP-->
+<!ENTITY sqcups "&#x2294;&#xFE00;"><!--SQUARE CUP with serifs-->
+<!ENTITY Sqrt "&#x221A;"><!--SQUARE ROOT-->
+<!ENTITY sqsub "&#x228F;"><!--SQUARE IMAGE OF-->
+<!ENTITY sqsube "&#x2291;"><!--SQUARE IMAGE OF OR EQUAL TO-->
+<!ENTITY sqsubset "&#x228F;"><!--SQUARE IMAGE OF-->
+<!ENTITY sqsubseteq "&#x2291;"><!--SQUARE IMAGE OF OR EQUAL TO-->
+<!ENTITY sqsup "&#x2290;"><!--SQUARE ORIGINAL OF-->
+<!ENTITY sqsupe "&#x2292;"><!--SQUARE ORIGINAL OF OR EQUAL TO-->
+<!ENTITY sqsupset "&#x2290;"><!--SQUARE ORIGINAL OF-->
+<!ENTITY sqsupseteq "&#x2292;"><!--SQUARE ORIGINAL OF OR EQUAL TO-->
+<!ENTITY squ "&#x25A1;"><!--WHITE SQUARE-->
+<!ENTITY Square "&#x25A1;"><!--WHITE SQUARE-->
+<!ENTITY square "&#x25A1;"><!--WHITE SQUARE-->
+<!ENTITY SquareIntersection "&#x2293;"><!--SQUARE CAP-->
+<!ENTITY SquareSubset "&#x228F;"><!--SQUARE IMAGE OF-->
+<!ENTITY SquareSubsetEqual "&#x2291;"><!--SQUARE IMAGE OF OR EQUAL TO-->
+<!ENTITY SquareSuperset "&#x2290;"><!--SQUARE ORIGINAL OF-->
+<!ENTITY SquareSupersetEqual "&#x2292;"><!--SQUARE ORIGINAL OF OR EQUAL TO-->
+<!ENTITY SquareUnion "&#x2294;"><!--SQUARE CUP-->
+<!ENTITY squarf "&#x25AA;"><!--BLACK SMALL SQUARE-->
+<!ENTITY squf "&#x25AA;"><!--BLACK SMALL SQUARE-->
+<!ENTITY srarr "&#x2192;"><!--RIGHTWARDS ARROW-->
+<!ENTITY Sscr "&#x1D4AE;"><!--MATHEMATICAL SCRIPT CAPITAL S-->
+<!ENTITY sscr "&#x1D4C8;"><!--MATHEMATICAL SCRIPT SMALL S-->
+<!ENTITY ssetmn "&#x2216;"><!--SET MINUS-->
+<!ENTITY ssmile "&#x2323;"><!--SMILE-->
+<!ENTITY sstarf "&#x22C6;"><!--STAR OPERATOR-->
+<!ENTITY Star "&#x22C6;"><!--STAR OPERATOR-->
+<!ENTITY star "&#x2606;"><!--WHITE STAR-->
+<!ENTITY starf "&#x2605;"><!--BLACK STAR-->
+<!ENTITY straightepsilon "&#x3F5;"><!--GREEK LUNATE EPSILON SYMBOL-->
+<!ENTITY straightphi "&#x3D5;"><!--GREEK PHI SYMBOL-->
+<!ENTITY strns "&#xAF;"><!--MACRON-->
+<!ENTITY Sub "&#x22D0;"><!--DOUBLE SUBSET-->
+<!ENTITY sub "&#x2282;"><!--SUBSET OF-->
+<!ENTITY subdot "&#x2ABD;"><!--SUBSET WITH DOT-->
+<!ENTITY subE "&#x2AC5;"><!--SUBSET OF ABOVE EQUALS SIGN-->
+<!ENTITY sube "&#x2286;"><!--SUBSET OF OR EQUAL TO-->
+<!ENTITY subedot "&#x2AC3;"><!--SUBSET OF OR EQUAL TO WITH DOT ABOVE-->
+<!ENTITY submult "&#x2AC1;"><!--SUBSET WITH MULTIPLICATION SIGN BELOW-->
+<!ENTITY subnE "&#x2ACB;"><!--SUBSET OF ABOVE NOT EQUAL TO-->
+<!ENTITY subne "&#x228A;"><!--SUBSET OF WITH NOT EQUAL TO-->
+<!ENTITY subplus "&#x2ABF;"><!--SUBSET WITH PLUS SIGN BELOW-->
+<!ENTITY subrarr "&#x2979;"><!--SUBSET ABOVE RIGHTWARDS ARROW-->
+<!ENTITY Subset "&#x22D0;"><!--DOUBLE SUBSET-->
+<!ENTITY subset "&#x2282;"><!--SUBSET OF-->
+<!ENTITY subseteq "&#x2286;"><!--SUBSET OF OR EQUAL TO-->
+<!ENTITY subseteqq "&#x2AC5;"><!--SUBSET OF ABOVE EQUALS SIGN-->
+<!ENTITY SubsetEqual "&#x2286;"><!--SUBSET OF OR EQUAL TO-->
+<!ENTITY subsetneq "&#x228A;"><!--SUBSET OF WITH NOT EQUAL TO-->
+<!ENTITY subsetneqq "&#x2ACB;"><!--SUBSET OF ABOVE NOT EQUAL TO-->
+<!ENTITY subsim "&#x2AC7;"><!--SUBSET OF ABOVE TILDE OPERATOR-->
+<!ENTITY subsub "&#x2AD5;"><!--SUBSET ABOVE SUBSET-->
+<!ENTITY subsup "&#x2AD3;"><!--SUBSET ABOVE SUPERSET-->
+<!ENTITY succ "&#x227B;"><!--SUCCEEDS-->
+<!ENTITY succapprox "&#x2AB8;"><!--SUCCEEDS ABOVE ALMOST EQUAL TO-->
+<!ENTITY succcurlyeq "&#x227D;"><!--SUCCEEDS OR EQUAL TO-->
+<!ENTITY Succeeds "&#x227B;"><!--SUCCEEDS-->
+<!ENTITY SucceedsEqual "&#x2AB0;"><!--SUCCEEDS ABOVE SINGLE-LINE EQUALS SIGN-->
+<!ENTITY SucceedsSlantEqual "&#x227D;"><!--SUCCEEDS OR EQUAL TO-->
+<!ENTITY SucceedsTilde "&#x227F;"><!--SUCCEEDS OR EQUIVALENT TO-->
+<!ENTITY succeq "&#x2AB0;"><!--SUCCEEDS ABOVE SINGLE-LINE EQUALS SIGN-->
+<!ENTITY succnapprox "&#x2ABA;"><!--SUCCEEDS ABOVE NOT ALMOST EQUAL TO-->
+<!ENTITY succneqq "&#x2AB6;"><!--SUCCEEDS ABOVE NOT EQUAL TO-->
+<!ENTITY succnsim "&#x22E9;"><!--SUCCEEDS BUT NOT EQUIVALENT TO-->
+<!ENTITY succsim "&#x227F;"><!--SUCCEEDS OR EQUIVALENT TO-->
+<!ENTITY SuchThat "&#x220B;"><!--CONTAINS AS MEMBER-->
+<!ENTITY Sum "&#x2211;"><!--N-ARY SUMMATION-->
+<!ENTITY sum "&#x2211;"><!--N-ARY SUMMATION-->
+<!ENTITY sung "&#x266A;"><!--EIGHTH NOTE-->
+<!ENTITY Sup "&#x22D1;"><!--DOUBLE SUPERSET-->
+<!ENTITY sup "&#x2283;"><!--SUPERSET OF-->
+<!ENTITY sup1 "&#xB9;"><!--SUPERSCRIPT ONE-->
+<!ENTITY sup2 "&#xB2;"><!--SUPERSCRIPT TWO-->
+<!ENTITY sup3 "&#xB3;"><!--SUPERSCRIPT THREE-->
+<!ENTITY supdot "&#x2ABE;"><!--SUPERSET WITH DOT-->
+<!ENTITY supdsub "&#x2AD8;"><!--SUPERSET BESIDE AND JOINED BY DASH WITH SUBSET-->
+<!ENTITY supE "&#x2AC6;"><!--SUPERSET OF ABOVE EQUALS SIGN-->
+<!ENTITY supe "&#x2287;"><!--SUPERSET OF OR EQUAL TO-->
+<!ENTITY supedot "&#x2AC4;"><!--SUPERSET OF OR EQUAL TO WITH DOT ABOVE-->
+<!ENTITY Superset "&#x2283;"><!--SUPERSET OF-->
+<!ENTITY SupersetEqual "&#x2287;"><!--SUPERSET OF OR EQUAL TO-->
+<!ENTITY suphsol "&#x27C9;"><!--SUPERSET PRECEDING SOLIDUS-->
+<!ENTITY suphsub "&#x2AD7;"><!--SUPERSET BESIDE SUBSET-->
+<!ENTITY suplarr "&#x297B;"><!--SUPERSET ABOVE LEFTWARDS ARROW-->
+<!ENTITY supmult "&#x2AC2;"><!--SUPERSET WITH MULTIPLICATION SIGN BELOW-->
+<!ENTITY supnE "&#x2ACC;"><!--SUPERSET OF ABOVE NOT EQUAL TO-->
+<!ENTITY supne "&#x228B;"><!--SUPERSET OF WITH NOT EQUAL TO-->
+<!ENTITY supplus "&#x2AC0;"><!--SUPERSET WITH PLUS SIGN BELOW-->
+<!ENTITY Supset "&#x22D1;"><!--DOUBLE SUPERSET-->
+<!ENTITY supset "&#x2283;"><!--SUPERSET OF-->
+<!ENTITY supseteq "&#x2287;"><!--SUPERSET OF OR EQUAL TO-->
+<!ENTITY supseteqq "&#x2AC6;"><!--SUPERSET OF ABOVE EQUALS SIGN-->
+<!ENTITY supsetneq "&#x228B;"><!--SUPERSET OF WITH NOT EQUAL TO-->
+<!ENTITY supsetneqq "&#x2ACC;"><!--SUPERSET OF ABOVE NOT EQUAL TO-->
+<!ENTITY supsim "&#x2AC8;"><!--SUPERSET OF ABOVE TILDE OPERATOR-->
+<!ENTITY supsub "&#x2AD4;"><!--SUPERSET ABOVE SUBSET-->
+<!ENTITY supsup "&#x2AD6;"><!--SUPERSET ABOVE SUPERSET-->
+<!ENTITY swarhk "&#x2926;"><!--SOUTH WEST ARROW WITH HOOK-->
+<!ENTITY swArr "&#x21D9;"><!--SOUTH WEST DOUBLE ARROW-->
+<!ENTITY swarr "&#x2199;"><!--SOUTH WEST ARROW-->
+<!ENTITY swarrow "&#x2199;"><!--SOUTH WEST ARROW-->
+<!ENTITY swnwar "&#x292A;"><!--SOUTH WEST ARROW AND NORTH WEST ARROW-->
+<!ENTITY szlig "&#xDF;"><!--LATIN SMALL LETTER SHARP S-->
+<!ENTITY Tab "&#x9;"><!--CHARACTER TABULATION-->
+<!ENTITY target "&#x2316;"><!--POSITION INDICATOR-->
+<!ENTITY Tau "&#x3A4;"><!--GREEK CAPITAL LETTER TAU-->
+<!ENTITY tau "&#x3C4;"><!--GREEK SMALL LETTER TAU-->
+<!ENTITY tbrk "&#x23B4;"><!--TOP SQUARE BRACKET-->
+<!ENTITY Tcaron "&#x164;"><!--LATIN CAPITAL LETTER T WITH CARON-->
+<!ENTITY tcaron "&#x165;"><!--LATIN SMALL LETTER T WITH CARON-->
+<!ENTITY Tcedil "&#x162;"><!--LATIN CAPITAL LETTER T WITH CEDILLA-->
+<!ENTITY tcedil "&#x163;"><!--LATIN SMALL LETTER T WITH CEDILLA-->
+<!ENTITY Tcy "&#x422;"><!--CYRILLIC CAPITAL LETTER TE-->
+<!ENTITY tcy "&#x442;"><!--CYRILLIC SMALL LETTER TE-->
+<!ENTITY tdot " &#x20DB;"><!--COMBINING THREE DOTS ABOVE-->
+<!ENTITY telrec "&#x2315;"><!--TELEPHONE RECORDER-->
+<!ENTITY Tfr "&#x1D517;"><!--MATHEMATICAL FRAKTUR CAPITAL T-->
+<!ENTITY tfr "&#x1D531;"><!--MATHEMATICAL FRAKTUR SMALL T-->
+<!ENTITY there4 "&#x2234;"><!--THEREFORE-->
+<!ENTITY Therefore "&#x2234;"><!--THEREFORE-->
+<!ENTITY therefore "&#x2234;"><!--THEREFORE-->
+<!ENTITY Theta "&#x398;"><!--GREEK CAPITAL LETTER THETA-->
+<!ENTITY theta "&#x3B8;"><!--GREEK SMALL LETTER THETA-->
+<!ENTITY thetasym "&#x3D1;"><!--GREEK THETA SYMBOL-->
+<!ENTITY thetav "&#x3D1;"><!--GREEK THETA SYMBOL-->
+<!ENTITY thickapprox "&#x2248;"><!--ALMOST EQUAL TO-->
+<!ENTITY thicksim "&#x223C;"><!--TILDE OPERATOR-->
+<!ENTITY ThickSpace "&#x205F;&#x200A;"><!--space of width 5/18 em-->
+<!ENTITY thinsp "&#x2009;"><!--THIN SPACE-->
+<!ENTITY ThinSpace "&#x2009;"><!--THIN SPACE-->
+<!ENTITY thkap "&#x2248;"><!--ALMOST EQUAL TO-->
+<!ENTITY thksim "&#x223C;"><!--TILDE OPERATOR-->
+<!ENTITY THORN "&#xDE;"><!--LATIN CAPITAL LETTER THORN-->
+<!ENTITY thorn "&#xFE;"><!--LATIN SMALL LETTER THORN-->
+<!ENTITY Tilde "&#x223C;"><!--TILDE OPERATOR-->
+<!ENTITY tilde "&#x2DC;"><!--SMALL TILDE-->
+<!ENTITY TildeEqual "&#x2243;"><!--ASYMPTOTICALLY EQUAL TO-->
+<!ENTITY TildeFullEqual "&#x2245;"><!--APPROXIMATELY EQUAL TO-->
+<!ENTITY TildeTilde "&#x2248;"><!--ALMOST EQUAL TO-->
+<!ENTITY times "&#xD7;"><!--MULTIPLICATION SIGN-->
+<!ENTITY timesb "&#x22A0;"><!--SQUARED TIMES-->
+<!ENTITY timesbar "&#x2A31;"><!--MULTIPLICATION SIGN WITH UNDERBAR-->
+<!ENTITY timesd "&#x2A30;"><!--MULTIPLICATION SIGN WITH DOT ABOVE-->
+<!ENTITY tint "&#x222D;"><!--TRIPLE INTEGRAL-->
+<!ENTITY toea "&#x2928;"><!--NORTH EAST ARROW AND SOUTH EAST ARROW-->
+<!ENTITY top "&#x22A4;"><!--DOWN TACK-->
+<!ENTITY topbot "&#x2336;"><!--APL FUNCTIONAL SYMBOL I-BEAM-->
+<!ENTITY topcir "&#x2AF1;"><!--DOWN TACK WITH CIRCLE BELOW-->
+<!ENTITY Topf "&#x1D54B;"><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL T-->
+<!ENTITY topf "&#x1D565;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL T-->
+<!ENTITY topfork "&#x2ADA;"><!--PITCHFORK WITH TEE TOP-->
+<!ENTITY tosa "&#x2929;"><!--SOUTH EAST ARROW AND SOUTH WEST ARROW-->
+<!ENTITY tprime "&#x2034;"><!--TRIPLE PRIME-->
+<!ENTITY TRADE "&#x2122;"><!--TRADE MARK SIGN-->
+<!ENTITY trade "&#x2122;"><!--TRADE MARK SIGN-->
+<!ENTITY triangle "&#x25B5;"><!--WHITE UP-POINTING SMALL TRIANGLE-->
+<!ENTITY triangledown "&#x25BF;"><!--WHITE DOWN-POINTING SMALL TRIANGLE-->
+<!ENTITY triangleleft "&#x25C3;"><!--WHITE LEFT-POINTING SMALL TRIANGLE-->
+<!ENTITY trianglelefteq "&#x22B4;"><!--NORMAL SUBGROUP OF OR EQUAL TO-->
+<!ENTITY triangleq "&#x225C;"><!--DELTA EQUAL TO-->
+<!ENTITY triangleright "&#x25B9;"><!--WHITE RIGHT-POINTING SMALL TRIANGLE-->
+<!ENTITY trianglerighteq "&#x22B5;"><!--CONTAINS AS NORMAL SUBGROUP OR EQUAL TO-->
+<!ENTITY tridot "&#x25EC;"><!--WHITE UP-POINTING TRIANGLE WITH DOT-->
+<!ENTITY trie "&#x225C;"><!--DELTA EQUAL TO-->
+<!ENTITY triminus "&#x2A3A;"><!--MINUS SIGN IN TRIANGLE-->
+<!ENTITY TripleDot " &#x20DB;"><!--COMBINING THREE DOTS ABOVE-->
+<!ENTITY triplus "&#x2A39;"><!--PLUS SIGN IN TRIANGLE-->
+<!ENTITY trisb "&#x29CD;"><!--TRIANGLE WITH SERIFS AT BOTTOM-->
+<!ENTITY tritime "&#x2A3B;"><!--MULTIPLICATION SIGN IN TRIANGLE-->
+<!ENTITY trpezium "&#x23E2;"><!--WHITE TRAPEZIUM-->
+<!ENTITY Tscr "&#x1D4AF;"><!--MATHEMATICAL SCRIPT CAPITAL T-->
+<!ENTITY tscr "&#x1D4C9;"><!--MATHEMATICAL SCRIPT SMALL T-->
+<!ENTITY TScy "&#x426;"><!--CYRILLIC CAPITAL LETTER TSE-->
+<!ENTITY tscy "&#x446;"><!--CYRILLIC SMALL LETTER TSE-->
+<!ENTITY TSHcy "&#x40B;"><!--CYRILLIC CAPITAL LETTER TSHE-->
+<!ENTITY tshcy "&#x45B;"><!--CYRILLIC SMALL LETTER TSHE-->
+<!ENTITY Tstrok "&#x166;"><!--LATIN CAPITAL LETTER T WITH STROKE-->
+<!ENTITY tstrok "&#x167;"><!--LATIN SMALL LETTER T WITH STROKE-->
+<!ENTITY twixt "&#x226C;"><!--BETWEEN-->
+<!ENTITY twoheadleftarrow "&#x219E;"><!--LEFTWARDS TWO HEADED ARROW-->
+<!ENTITY twoheadrightarrow "&#x21A0;"><!--RIGHTWARDS TWO HEADED ARROW-->
+<!ENTITY Uacute "&#xDA;"><!--LATIN CAPITAL LETTER U WITH ACUTE-->
+<!ENTITY uacute "&#xFA;"><!--LATIN SMALL LETTER U WITH ACUTE-->
+<!ENTITY Uarr "&#x219F;"><!--UPWARDS TWO HEADED ARROW-->
+<!ENTITY uArr "&#x21D1;"><!--UPWARDS DOUBLE ARROW-->
+<!ENTITY uarr "&#x2191;"><!--UPWARDS ARROW-->
+<!ENTITY Uarrocir "&#x2949;"><!--UPWARDS TWO-HEADED ARROW FROM SMALL CIRCLE-->
+<!ENTITY Ubrcy "&#x40E;"><!--CYRILLIC CAPITAL LETTER SHORT U-->
+<!ENTITY ubrcy "&#x45E;"><!--CYRILLIC SMALL LETTER SHORT U-->
+<!ENTITY Ubreve "&#x16C;"><!--LATIN CAPITAL LETTER U WITH BREVE-->
+<!ENTITY ubreve "&#x16D;"><!--LATIN SMALL LETTER U WITH BREVE-->
+<!ENTITY Ucirc "&#xDB;"><!--LATIN CAPITAL LETTER U WITH CIRCUMFLEX-->
+<!ENTITY ucirc "&#xFB;"><!--LATIN SMALL LETTER U WITH CIRCUMFLEX-->
+<!ENTITY Ucy "&#x423;"><!--CYRILLIC CAPITAL LETTER U-->
+<!ENTITY ucy "&#x443;"><!--CYRILLIC SMALL LETTER U-->
+<!ENTITY udarr "&#x21C5;"><!--UPWARDS ARROW LEFTWARDS OF DOWNWARDS ARROW-->
+<!ENTITY Udblac "&#x170;"><!--LATIN CAPITAL LETTER U WITH DOUBLE ACUTE-->
+<!ENTITY udblac "&#x171;"><!--LATIN SMALL LETTER U WITH DOUBLE ACUTE-->
+<!ENTITY udhar "&#x296E;"><!--UPWARDS HARPOON WITH BARB LEFT BESIDE DOWNWARDS HARPOON WITH BARB RIGHT-->
+<!ENTITY ufisht "&#x297E;"><!--UP FISH TAIL-->
+<!ENTITY Ufr "&#x1D518;"><!--MATHEMATICAL FRAKTUR CAPITAL U-->
+<!ENTITY ufr "&#x1D532;"><!--MATHEMATICAL FRAKTUR SMALL U-->
+<!ENTITY Ugrave "&#xD9;"><!--LATIN CAPITAL LETTER U WITH GRAVE-->
+<!ENTITY ugrave "&#xF9;"><!--LATIN SMALL LETTER U WITH GRAVE-->
+<!ENTITY uHar "&#x2963;"><!--UPWARDS HARPOON WITH BARB LEFT BESIDE UPWARDS HARPOON WITH BARB RIGHT-->
+<!ENTITY uharl "&#x21BF;"><!--UPWARDS HARPOON WITH BARB LEFTWARDS-->
+<!ENTITY uharr "&#x21BE;"><!--UPWARDS HARPOON WITH BARB RIGHTWARDS-->
+<!ENTITY uhblk "&#x2580;"><!--UPPER HALF BLOCK-->
+<!ENTITY ulcorn "&#x231C;"><!--TOP LEFT CORNER-->
+<!ENTITY ulcorner "&#x231C;"><!--TOP LEFT CORNER-->
+<!ENTITY ulcrop "&#x230F;"><!--TOP LEFT CROP-->
+<!ENTITY ultri "&#x25F8;"><!--UPPER LEFT TRIANGLE-->
+<!ENTITY Umacr "&#x16A;"><!--LATIN CAPITAL LETTER U WITH MACRON-->
+<!ENTITY umacr "&#x16B;"><!--LATIN SMALL LETTER U WITH MACRON-->
+<!ENTITY uml "&#xA8;"><!--DIAERESIS-->
+<!ENTITY UnderBar "&#x5F;"><!--LOW LINE-->
+<!ENTITY UnderBrace "&#x23DF;"><!--BOTTOM CURLY BRACKET-->
+<!ENTITY UnderBracket "&#x23B5;"><!--BOTTOM SQUARE BRACKET-->
+<!ENTITY UnderParenthesis "&#x23DD;"><!--BOTTOM PARENTHESIS-->
+<!ENTITY Union "&#x22C3;"><!--N-ARY UNION-->
+<!ENTITY UnionPlus "&#x228E;"><!--MULTISET UNION-->
+<!ENTITY Uogon "&#x172;"><!--LATIN CAPITAL LETTER U WITH OGONEK-->
+<!ENTITY uogon "&#x173;"><!--LATIN SMALL LETTER U WITH OGONEK-->
+<!ENTITY Uopf "&#x1D54C;"><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL U-->
+<!ENTITY uopf "&#x1D566;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL U-->
+<!ENTITY UpArrow "&#x2191;"><!--UPWARDS ARROW-->
+<!ENTITY Uparrow "&#x21D1;"><!--UPWARDS DOUBLE ARROW-->
+<!ENTITY uparrow "&#x2191;"><!--UPWARDS ARROW-->
+<!ENTITY UpArrowBar "&#x2912;"><!--UPWARDS ARROW TO BAR-->
+<!ENTITY UpArrowDownArrow "&#x21C5;"><!--UPWARDS ARROW LEFTWARDS OF DOWNWARDS ARROW-->
+<!ENTITY UpDownArrow "&#x2195;"><!--UP DOWN ARROW-->
+<!ENTITY Updownarrow "&#x21D5;"><!--UP DOWN DOUBLE ARROW-->
+<!ENTITY updownarrow "&#x2195;"><!--UP DOWN ARROW-->
+<!ENTITY UpEquilibrium "&#x296E;"><!--UPWARDS HARPOON WITH BARB LEFT BESIDE DOWNWARDS HARPOON WITH BARB RIGHT-->
+<!ENTITY upharpoonleft "&#x21BF;"><!--UPWARDS HARPOON WITH BARB LEFTWARDS-->
+<!ENTITY upharpoonright "&#x21BE;"><!--UPWARDS HARPOON WITH BARB RIGHTWARDS-->
+<!ENTITY uplus "&#x228E;"><!--MULTISET UNION-->
+<!ENTITY UpperLeftArrow "&#x2196;"><!--NORTH WEST ARROW-->
+<!ENTITY UpperRightArrow "&#x2197;"><!--NORTH EAST ARROW-->
+<!ENTITY Upsi "&#x3D2;"><!--GREEK UPSILON WITH HOOK SYMBOL-->
+<!ENTITY upsi "&#x3C5;"><!--GREEK SMALL LETTER UPSILON-->
+<!ENTITY upsih "&#x3D2;"><!--GREEK UPSILON WITH HOOK SYMBOL-->
+<!ENTITY Upsilon "&#x3A5;"><!--GREEK CAPITAL LETTER UPSILON-->
+<!ENTITY upsilon "&#x3C5;"><!--GREEK SMALL LETTER UPSILON-->
+<!ENTITY UpTee "&#x22A5;"><!--UP TACK-->
+<!ENTITY UpTeeArrow "&#x21A5;"><!--UPWARDS ARROW FROM BAR-->
+<!ENTITY upuparrows "&#x21C8;"><!--UPWARDS PAIRED ARROWS-->
+<!ENTITY urcorn "&#x231D;"><!--TOP RIGHT CORNER-->
+<!ENTITY urcorner "&#x231D;"><!--TOP RIGHT CORNER-->
+<!ENTITY urcrop "&#x230E;"><!--TOP RIGHT CROP-->
+<!ENTITY Uring "&#x16E;"><!--LATIN CAPITAL LETTER U WITH RING ABOVE-->
+<!ENTITY uring "&#x16F;"><!--LATIN SMALL LETTER U WITH RING ABOVE-->
+<!ENTITY urtri "&#x25F9;"><!--UPPER RIGHT TRIANGLE-->
+<!ENTITY Uscr "&#x1D4B0;"><!--MATHEMATICAL SCRIPT CAPITAL U-->
+<!ENTITY uscr "&#x1D4CA;"><!--MATHEMATICAL SCRIPT SMALL U-->
+<!ENTITY utdot "&#x22F0;"><!--UP RIGHT DIAGONAL ELLIPSIS-->
+<!ENTITY Utilde "&#x168;"><!--LATIN CAPITAL LETTER U WITH TILDE-->
+<!ENTITY utilde "&#x169;"><!--LATIN SMALL LETTER U WITH TILDE-->
+<!ENTITY utri "&#x25B5;"><!--WHITE UP-POINTING SMALL TRIANGLE-->
+<!ENTITY utrif "&#x25B4;"><!--BLACK UP-POINTING SMALL TRIANGLE-->
+<!ENTITY uuarr "&#x21C8;"><!--UPWARDS PAIRED ARROWS-->
+<!ENTITY Uuml "&#xDC;"><!--LATIN CAPITAL LETTER U WITH DIAERESIS-->
+<!ENTITY uuml "&#xFC;"><!--LATIN SMALL LETTER U WITH DIAERESIS-->
+<!ENTITY uwangle "&#x29A7;"><!--OBLIQUE ANGLE OPENING DOWN-->
+<!ENTITY vangrt "&#x299C;"><!--RIGHT ANGLE VARIANT WITH SQUARE-->
+<!ENTITY varepsilon "&#x3F5;"><!--GREEK LUNATE EPSILON SYMBOL-->
+<!ENTITY varkappa "&#x3F0;"><!--GREEK KAPPA SYMBOL-->
+<!ENTITY varnothing "&#x2205;"><!--EMPTY SET-->
+<!ENTITY varphi "&#x3D5;"><!--GREEK PHI SYMBOL-->
+<!ENTITY varpi "&#x3D6;"><!--GREEK PI SYMBOL-->
+<!ENTITY varpropto "&#x221D;"><!--PROPORTIONAL TO-->
+<!ENTITY vArr "&#x21D5;"><!--UP DOWN DOUBLE ARROW-->
+<!ENTITY varr "&#x2195;"><!--UP DOWN ARROW-->
+<!ENTITY varrho "&#x3F1;"><!--GREEK RHO SYMBOL-->
+<!ENTITY varsigma "&#x3C2;"><!--GREEK SMALL LETTER FINAL SIGMA-->
+<!ENTITY varsubsetneq "&#x228A;&#xFE00;"><!--SUBSET OF WITH NOT EQUAL TO - variant with stroke through bottom members-->
+<!ENTITY varsubsetneqq "&#x2ACB;&#xFE00;"><!--SUBSET OF ABOVE NOT EQUAL TO - variant with stroke through bottom members-->
+<!ENTITY varsupsetneq "&#x228B;&#xFE00;"><!--SUPERSET OF WITH NOT EQUAL TO - variant with stroke through bottom members-->
+<!ENTITY varsupsetneqq "&#x2ACC;&#xFE00;"><!--SUPERSET OF ABOVE NOT EQUAL TO - variant with stroke through bottom members-->
+<!ENTITY vartheta "&#x3D1;"><!--GREEK THETA SYMBOL-->
+<!ENTITY vartriangleleft "&#x22B2;"><!--NORMAL SUBGROUP OF-->
+<!ENTITY vartriangleright "&#x22B3;"><!--CONTAINS AS NORMAL SUBGROUP-->
+<!ENTITY Vbar "&#x2AEB;"><!--DOUBLE UP TACK-->
+<!ENTITY vBar "&#x2AE8;"><!--SHORT UP TACK WITH UNDERBAR-->
+<!ENTITY vBarv "&#x2AE9;"><!--SHORT UP TACK ABOVE SHORT DOWN TACK-->
+<!ENTITY Vcy "&#x412;"><!--CYRILLIC CAPITAL LETTER VE-->
+<!ENTITY vcy "&#x432;"><!--CYRILLIC SMALL LETTER VE-->
+<!ENTITY VDash "&#x22AB;"><!--DOUBLE VERTICAL BAR DOUBLE RIGHT TURNSTILE-->
+<!ENTITY Vdash "&#x22A9;"><!--FORCES-->
+<!ENTITY vDash "&#x22A8;"><!--TRUE-->
+<!ENTITY vdash "&#x22A2;"><!--RIGHT TACK-->
+<!ENTITY Vdashl "&#x2AE6;"><!--LONG DASH FROM LEFT MEMBER OF DOUBLE VERTICAL-->
+<!ENTITY Vee "&#x22C1;"><!--N-ARY LOGICAL OR-->
+<!ENTITY vee "&#x2228;"><!--LOGICAL OR-->
+<!ENTITY veebar "&#x22BB;"><!--XOR-->
+<!ENTITY veeeq "&#x225A;"><!--EQUIANGULAR TO-->
+<!ENTITY vellip "&#x22EE;"><!--VERTICAL ELLIPSIS-->
+<!ENTITY Verbar "&#x2016;"><!--DOUBLE VERTICAL LINE-->
+<!ENTITY verbar "&#x7C;"><!--VERTICAL LINE-->
+<!ENTITY Vert "&#x2016;"><!--DOUBLE VERTICAL LINE-->
+<!ENTITY vert "&#x7C;"><!--VERTICAL LINE-->
+<!ENTITY VerticalBar "&#x2223;"><!--DIVIDES-->
+<!ENTITY VerticalLine "&#x7C;"><!--VERTICAL LINE-->
+<!ENTITY VerticalSeparator "&#x2758;"><!--LIGHT VERTICAL BAR-->
+<!ENTITY VerticalTilde "&#x2240;"><!--WREATH PRODUCT-->
+<!ENTITY VeryThinSpace "&#x200A;"><!--HAIR SPACE-->
+<!ENTITY Vfr "&#x1D519;"><!--MATHEMATICAL FRAKTUR CAPITAL V-->
+<!ENTITY vfr "&#x1D533;"><!--MATHEMATICAL FRAKTUR SMALL V-->
+<!ENTITY vltri "&#x22B2;"><!--NORMAL SUBGROUP OF-->
+<!ENTITY vnsub "&#x2282;&#x20D2;"><!--SUBSET OF with vertical line-->
+<!ENTITY vnsup "&#x2283;&#x20D2;"><!--SUPERSET OF with vertical line-->
+<!ENTITY Vopf "&#x1D54D;"><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL V-->
+<!ENTITY vopf "&#x1D567;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL V-->
+<!ENTITY vprop "&#x221D;"><!--PROPORTIONAL TO-->
+<!ENTITY vrtri "&#x22B3;"><!--CONTAINS AS NORMAL SUBGROUP-->
+<!ENTITY Vscr "&#x1D4B1;"><!--MATHEMATICAL SCRIPT CAPITAL V-->
+<!ENTITY vscr "&#x1D4CB;"><!--MATHEMATICAL SCRIPT SMALL V-->
+<!ENTITY vsubnE "&#x2ACB;&#xFE00;"><!--SUBSET OF ABOVE NOT EQUAL TO - variant with stroke through bottom members-->
+<!ENTITY vsubne "&#x228A;&#xFE00;"><!--SUBSET OF WITH NOT EQUAL TO - variant with stroke through bottom members-->
+<!ENTITY vsupnE "&#x2ACC;&#xFE00;"><!--SUPERSET OF ABOVE NOT EQUAL TO - variant with stroke through bottom members-->
+<!ENTITY vsupne "&#x228B;&#xFE00;"><!--SUPERSET OF WITH NOT EQUAL TO - variant with stroke through bottom members-->
+<!ENTITY Vvdash "&#x22AA;"><!--TRIPLE VERTICAL BAR RIGHT TURNSTILE-->
+<!ENTITY vzigzag "&#x299A;"><!--VERTICAL ZIGZAG LINE-->
+<!ENTITY Wcirc "&#x174;"><!--LATIN CAPITAL LETTER W WITH CIRCUMFLEX-->
+<!ENTITY wcirc "&#x175;"><!--LATIN SMALL LETTER W WITH CIRCUMFLEX-->
+<!ENTITY wedbar "&#x2A5F;"><!--LOGICAL AND WITH UNDERBAR-->
+<!ENTITY Wedge "&#x22C0;"><!--N-ARY LOGICAL AND-->
+<!ENTITY wedge "&#x2227;"><!--LOGICAL AND-->
+<!ENTITY wedgeq "&#x2259;"><!--ESTIMATES-->
+<!ENTITY weierp "&#x2118;"><!--SCRIPT CAPITAL P-->
+<!ENTITY Wfr "&#x1D51A;"><!--MATHEMATICAL FRAKTUR CAPITAL W-->
+<!ENTITY wfr "&#x1D534;"><!--MATHEMATICAL FRAKTUR SMALL W-->
+<!ENTITY Wopf "&#x1D54E;"><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL W-->
+<!ENTITY wopf "&#x1D568;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL W-->
+<!ENTITY wp "&#x2118;"><!--SCRIPT CAPITAL P-->
+<!ENTITY wr "&#x2240;"><!--WREATH PRODUCT-->
+<!ENTITY wreath "&#x2240;"><!--WREATH PRODUCT-->
+<!ENTITY Wscr "&#x1D4B2;"><!--MATHEMATICAL SCRIPT CAPITAL W-->
+<!ENTITY wscr "&#x1D4CC;"><!--MATHEMATICAL SCRIPT SMALL W-->
+<!ENTITY xcap "&#x22C2;"><!--N-ARY INTERSECTION-->
+<!ENTITY xcirc "&#x25EF;"><!--LARGE CIRCLE-->
+<!ENTITY xcup "&#x22C3;"><!--N-ARY UNION-->
+<!ENTITY xdtri "&#x25BD;"><!--WHITE DOWN-POINTING TRIANGLE-->
+<!ENTITY Xfr "&#x1D51B;"><!--MATHEMATICAL FRAKTUR CAPITAL X-->
+<!ENTITY xfr "&#x1D535;"><!--MATHEMATICAL FRAKTUR SMALL X-->
+<!ENTITY xhArr "&#x27FA;"><!--LONG LEFT RIGHT DOUBLE ARROW-->
+<!ENTITY xharr "&#x27F7;"><!--LONG LEFT RIGHT ARROW-->
+<!ENTITY Xi "&#x39E;"><!--GREEK CAPITAL LETTER XI-->
+<!ENTITY xi "&#x3BE;"><!--GREEK SMALL LETTER XI-->
+<!ENTITY xlArr "&#x27F8;"><!--LONG LEFTWARDS DOUBLE ARROW-->
+<!ENTITY xlarr "&#x27F5;"><!--LONG LEFTWARDS ARROW-->
+<!ENTITY xmap "&#x27FC;"><!--LONG RIGHTWARDS ARROW FROM BAR-->
+<!ENTITY xnis "&#x22FB;"><!--CONTAINS WITH VERTICAL BAR AT END OF HORIZONTAL STROKE-->
+<!ENTITY xodot "&#x2A00;"><!--N-ARY CIRCLED DOT OPERATOR-->
+<!ENTITY Xopf "&#x1D54F;"><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL X-->
+<!ENTITY xopf "&#x1D569;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL X-->
+<!ENTITY xoplus "&#x2A01;"><!--N-ARY CIRCLED PLUS OPERATOR-->
+<!ENTITY xotime "&#x2A02;"><!--N-ARY CIRCLED TIMES OPERATOR-->
+<!ENTITY xrArr "&#x27F9;"><!--LONG RIGHTWARDS DOUBLE ARROW-->
+<!ENTITY xrarr "&#x27F6;"><!--LONG RIGHTWARDS ARROW-->
+<!ENTITY Xscr "&#x1D4B3;"><!--MATHEMATICAL SCRIPT CAPITAL X-->
+<!ENTITY xscr "&#x1D4CD;"><!--MATHEMATICAL SCRIPT SMALL X-->
+<!ENTITY xsqcup "&#x2A06;"><!--N-ARY SQUARE UNION OPERATOR-->
+<!ENTITY xuplus "&#x2A04;"><!--N-ARY UNION OPERATOR WITH PLUS-->
+<!ENTITY xutri "&#x25B3;"><!--WHITE UP-POINTING TRIANGLE-->
+<!ENTITY xvee "&#x22C1;"><!--N-ARY LOGICAL OR-->
+<!ENTITY xwedge "&#x22C0;"><!--N-ARY LOGICAL AND-->
+<!ENTITY Yacute "&#xDD;"><!--LATIN CAPITAL LETTER Y WITH ACUTE-->
+<!ENTITY yacute "&#xFD;"><!--LATIN SMALL LETTER Y WITH ACUTE-->
+<!ENTITY YAcy "&#x42F;"><!--CYRILLIC CAPITAL LETTER YA-->
+<!ENTITY yacy "&#x44F;"><!--CYRILLIC SMALL LETTER YA-->
+<!ENTITY Ycirc "&#x176;"><!--LATIN CAPITAL LETTER Y WITH CIRCUMFLEX-->
+<!ENTITY ycirc "&#x177;"><!--LATIN SMALL LETTER Y WITH CIRCUMFLEX-->
+<!ENTITY Ycy "&#x42B;"><!--CYRILLIC CAPITAL LETTER YERU-->
+<!ENTITY ycy "&#x44B;"><!--CYRILLIC SMALL LETTER YERU-->
+<!ENTITY yen "&#xA5;"><!--YEN SIGN-->
+<!ENTITY Yfr "&#x1D51C;"><!--MATHEMATICAL FRAKTUR CAPITAL Y-->
+<!ENTITY yfr "&#x1D536;"><!--MATHEMATICAL FRAKTUR SMALL Y-->
+<!ENTITY YIcy "&#x407;"><!--CYRILLIC CAPITAL LETTER YI-->
+<!ENTITY yicy "&#x457;"><!--CYRILLIC SMALL LETTER YI-->
+<!ENTITY Yopf "&#x1D550;"><!--MATHEMATICAL DOUBLE-STRUCK CAPITAL Y-->
+<!ENTITY yopf "&#x1D56A;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL Y-->
+<!ENTITY Yscr "&#x1D4B4;"><!--MATHEMATICAL SCRIPT CAPITAL Y-->
+<!ENTITY yscr "&#x1D4CE;"><!--MATHEMATICAL SCRIPT SMALL Y-->
+<!ENTITY YUcy "&#x42E;"><!--CYRILLIC CAPITAL LETTER YU-->
+<!ENTITY yucy "&#x44E;"><!--CYRILLIC SMALL LETTER YU-->
+<!ENTITY Yuml "&#x178;"><!--LATIN CAPITAL LETTER Y WITH DIAERESIS-->
+<!ENTITY yuml "&#xFF;"><!--LATIN SMALL LETTER Y WITH DIAERESIS-->
+<!ENTITY Zacute "&#x179;"><!--LATIN CAPITAL LETTER Z WITH ACUTE-->
+<!ENTITY zacute "&#x17A;"><!--LATIN SMALL LETTER Z WITH ACUTE-->
+<!ENTITY Zcaron "&#x17D;"><!--LATIN CAPITAL LETTER Z WITH CARON-->
+<!ENTITY zcaron "&#x17E;"><!--LATIN SMALL LETTER Z WITH CARON-->
+<!ENTITY Zcy "&#x417;"><!--CYRILLIC CAPITAL LETTER ZE-->
+<!ENTITY zcy "&#x437;"><!--CYRILLIC SMALL LETTER ZE-->
+<!ENTITY Zdot "&#x17B;"><!--LATIN CAPITAL LETTER Z WITH DOT ABOVE-->
+<!ENTITY zdot "&#x17C;"><!--LATIN SMALL LETTER Z WITH DOT ABOVE-->
+<!ENTITY zeetrf "&#x2128;"><!--BLACK-LETTER CAPITAL Z-->
+<!ENTITY ZeroWidthSpace "&#x200B;"><!--ZERO WIDTH SPACE-->
+<!ENTITY Zeta "&#x396;"><!--GREEK CAPITAL LETTER ZETA-->
+<!ENTITY zeta "&#x3B6;"><!--GREEK SMALL LETTER ZETA-->
+<!ENTITY Zfr "&#x2128;"><!--BLACK-LETTER CAPITAL Z-->
+<!ENTITY zfr "&#x1D537;"><!--MATHEMATICAL FRAKTUR SMALL Z-->
+<!ENTITY ZHcy "&#x416;"><!--CYRILLIC CAPITAL LETTER ZHE-->
+<!ENTITY zhcy "&#x436;"><!--CYRILLIC SMALL LETTER ZHE-->
+<!ENTITY zigrarr "&#x21DD;"><!--RIGHTWARDS SQUIGGLE ARROW-->
+<!ENTITY Zopf "&#x2124;"><!--DOUBLE-STRUCK CAPITAL Z-->
+<!ENTITY zopf "&#x1D56B;"><!--MATHEMATICAL DOUBLE-STRUCK SMALL Z-->
+<!ENTITY Zscr "&#x1D4B5;"><!--MATHEMATICAL SCRIPT CAPITAL Z-->
+<!ENTITY zscr "&#x1D4CF;"><!--MATHEMATICAL SCRIPT SMALL Z-->
+<!ENTITY zwj "&#x200D;"><!--ZERO WIDTH JOINER-->
+<!ENTITY zwnj "&#x200C;"><!--ZERO WIDTH NON-JOINER-->
+
+<!-- these tags put hooks into Python's logging mechanism -->
+<!ELEMENT logConfig EMPTY>
+<!ATTLIST logConfig
+    level (DEBUG | INFO | WARNING | ERROR | CRITICAL) #IMPLIED
+    format CDATA #IMPLIED
+    filename CDATA #IMPLIED
+    filemode (WRITE | APPEND) #IMPLIED
+    datefmt CDATA #IMPLIED
+>
+<!ELEMENT canvasConfig EMPTY>
+<!ATTLIST canvasConfig
+	initialFontName CDATA #IMPLIED
+	initialFontSize CDATA #IMPLIED
+	initialLeading CDATA #IMPLIED
+	cropBox CDATA #IMPLIED
+	artBox CDATA #IMPLIED
+	trimBox CDATA #IMPLIED
+	bleedBox CDATA #IMPLIED
+	>
+
+<!ELEMENT log %STRINGFORMS;>
+<!ATTLIST log level (DEBUG | INFO | WARNING | ERROR | CRITICAL) #IMPLIED>
+
+<!--short for log level="debug" -->
+<!ELEMENT debug %STRINGFORMS;>
+<!ELEMENT info %STRINGFORMS;>
+<!ELEMENT warning %STRINGFORMS;>
+<!ELEMENT error %STRINGFORMS;>
+<!ELEMENT critical %STRINGFORMS;>
+
+<!ELEMENT docinit (
+        alias | 
+        color | 
+        name | 
+        namedString | 
+        outlineAdd | 
+        registerType1Face | 
+        registerFont | 
+        registerCidFont | 
+        registerTTFont |
+        registerFontFamily |
+        logConfig |
+        cropMarks |
+        startIndex |
+		canvasConfig
+        )*>
+
+<!ELEMENT cropMarks EMPTY>
+<!ATTLIST cropMarks
+    borderWidth CDATA #IMPLIED
+    markWidth CDATA #IMPLIED
+    markColor CDATA #IMPLIED
+    markLength CDATA #IMPLIED
+    bleedWidth CDATA #IMPLIED
+	markLast CDATA #IMPLIED
+    >
+<!ELEMENT startIndex EMPTY>
+<!ATTLIST startIndex
+    name CDATA #IMPLIED
+    offset CDATA #IMPLIED
+    format (123|I|i|ABC|abc) #IMPLIED
+    >
+<!ELEMENT index EMPTY>
+<!ATTLIST index
+    name CDATA #IMPLIED
+    item CDATA #REQUIRED
+    offset CDATA #IMPLIED
+    format (123|I|i|ABC|abc) #IMPLIED
+	>
+<!ELEMENT showIndex EMPTY>
+<!ATTLIST showIndex
+    name		CDATA #IMPLIED
+    dot			CDATA #IMPLIED
+    style		CDATA #IMPLIED
+    tableStyle	CDATA #IMPLIED
+    headers		(yes | no | 0 | 1 | true | false) #IMPLIED
+    >
+
+<!ATTLIST docinit
+    pageMode (UseNone|UseOutlines|UseThumbs|FullScreen) #IMPLIED
+    pageLayout (SinglePage|OneColumn|TwoColumnLeft|TwoColumnRight) #IMPLIED
+    useCropMarks (yes | no | 0 | 1 | true | false) #IMPLIED
+    >
